@@ -1,0 +1,112 @@
+
+
+.menu_bot{
+    background-image: url(img/back-menu.jpg);
+    background-position: absolute;
+    background-repeat: no-repeat;
+    position:fixed;
+    top:0;
+    left:0;
+    height:100vh;
+    width: 100vw;
+    display:grid;
+    place-items:center;
+    padding:2rem;
+    z-index:10;
+    visibility:visible;
+    opacity: 1;
+   /* background-image: linear-gradient(to right bottom,#FE2,#4400AB);*/
+  background-size: contain;
+}
+
+.main-nav-list{
+
+        margin:0;
+        padding:0;
+        list-style:none;
+        display: flex;
+        align-items: center;
+
+}
+.main-nav-item{
+
+    text-align:center;
+    opacity: 1;
+    
+
+}
+.main-nav-item:last-child{
+
+    margin-bottom:32px;
+
+}
+
+.main-nav-link{
+
+    background-image: url(img/letrero.png);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    
+
+    position: relative;
+    padding: 10px 30px;
+    margin:0 15px;
+    color: #f5f252;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 20px;
+    transition: 0.3s;
+    overflow: hidden;
+
+}
+.main-nav-link:hover{
+
+    background:#8484849a;
+    color:rgb(203, 203, 203);
+    box-shadow: 0 0 100px #b72c1a;
+    transition-delay: 0.5s;
+
+
+}
+
+.main-nav-link:before{
+    content: '';
+    position: absolute;
+    top:0;
+    left:0;
+    width:10px;
+    height:10px;
+    border-top:2px solid #855a35d8;
+    border-left:2px solid #21ebff;
+    transition: 0.5;
+    transition-delay: 0.5s;
+
+}
+.main-nav-link:hover:before{
+
+    width:97%;
+    height: 95%;
+
+}
+.main-nav-link:after{
+
+    content: '';
+    position: absolute;
+    bottom:0;
+    right:0;
+    width:10px;
+    height:10px;
+    border-bottom:2px solid #21ebff;
+    border-right:2px solid #21ebff;
+    transition: 0.5;
+    transition-delay: 0.5s;
+
+}
+.main-nav-link:hover::after{
+
+    width:98%;
+    height:98%;
+
+}

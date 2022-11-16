@@ -1,0 +1,517 @@
+<!DOCTYPE html>three.module.js
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Proyecto</title>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as THREE from "./three.module.js";
+      import { OrbitControls } from "./OrbitControls.js";
+      import { GLTFLoader } from "./GLTFLoader.js";
+      //import {FBXLoader } from './FBXLoader.js';
+      import {FBXLoader} from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
+      import { STLLoader } from "./STLLoader.js";
+
+      // SCENE
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color("#34495E");
+
+      const camera = new THREE.PerspectiveCamera(
+        60,
+        window.innerWidth / window.innerHeight
+      );
+      camera.rotation.y=100;
+      camera.position.set(20, 5, 10);
+
+      const loader = new THREE.TextureLoader();
+      loader.load("./Imagenes/blue_sky.jpg", function (texture) {
+        scene.background = texture;
+      });
+
+      // RENDERER
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      document.body.appendChild(renderer.domElement);
+
+      // Lights
+      const hemispherelight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+      scene.add(hemispherelight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+      directionalLight.position.set(10, 50, 200);
+      directionalLight.castShadow = true;
+
+      const cube1Geometry = new THREE.BoxGeometry(1, 1, 1);
+      const cube1Material = new THREE.MeshPhongMaterial({ color: "aqua" });
+      const cube1 = new THREE.Mesh(cube1Geometry, cube1Material);
+      cube1.castShadow = true;
+      cube1.position.set(3, 0, 0);
+
+      let cube1BB = new THREE.Box3();
+      cube1BB.setFromObject(cube1);
+      //console.log(cube1BB);
+
+      // const bb = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+      // const object = new THREE.Mesh(bb, new THREE.MeshBasicMaterial(0xff0000));
+      // object.position.set(3, 0, 0);
+      // const box = new THREE.BoxHelper(object, 0xff0000);
+
+      const cube2Geometry = new THREE.BoxGeometry(1, 1, 1);
+      const cube2Material = new THREE.MeshPhongMaterial({ color: "coral" });
+      const cube2 = new THREE.Mesh(cube2Geometry, cube2Material);
+      cube2.position.set(-3, 0, 0);
+      cube2.castShadow = true;
+      //cube2.receiveShadow = true;
+
+      let cube2BB = new THREE.Box3();
+      cube2BB.setFromObject(cube2);
+
+      const sphereGeometry = new THREE.SphereGeometry(1);
+      const sphereMaterial = new THREE.MeshPhongMaterial({ color: "teal" });
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      sphere.castShadow = true;
+      sphere.position.set(0, 5, 0);
+
+      let sphereBB = new THREE.Sphere(sphere.position, 1);
+
+      // Plane
+      const planeGeometry = new THREE.PlaneGeometry(500, 300);
+      var texture = new THREE.TextureLoader().load( "./Imagenes/Tierra-de-desierto.jpg" );
+      const planeMaterial = new THREE.MeshPhongMaterial({ map: texture });
+      const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+      plane.position.set(15, -0.5, 15);
+      plane.receiveShadow = true;
+      plane.rotateX(-Math.PI / 2);
+
+      // Adding to scene
+      scene.add(  plane, hemispherelight, directionalLight);
+
+
+
+      const cameraControl = new OrbitControls(camera, renderer.domElement);
+
+      function checkCollisions() {
+        if (cube2BB.intersectsSphere(sphereBB)) {
+          sphere.material.wireframe = true;
+        } else {
+          sphere.material.wireframe = false;
+        }
+
+        if (cube2BB.containsBox(cube1BB)) {
+          cube1.scale.y = 3;
+        } else {
+          cube1.scale.y = 1;
+        }
+
+        if (cube2BB.intersectsBox(cube1BB)) {
+          cube1.material.color = new THREE.Color("red");
+        } else {
+          cube1.material.color = new THREE.Color("aqua");
+        }
+      }
+
+      // Resize
+
+      function resize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.render(scene, camera);
+      }
+
+      window.addEventListener("resize", resize);
+
+      // Loaders
+      const loaderGLTF = new GLTFLoader();
+      loaderGLTF.load(
+        "Zombie.glb",
+        function (gltf) {
+          let obj = gltf.scene;
+          document.onkeydown = function (e) {
+       //tecla W
+        if (e.keyCode === 87) {
+          obj.position.z -= 2;
+          obj.rotation.y = 90;
+        }
+//tecla S
+        if (e.keyCode === 83) {
+          obj.position.z += 2;
+          obj.rotation.y = 200;
+        }
+        //tecla A
+        if (e.keyCode === 65) {
+          obj.position.x -= 2;
+          obj.rotation.y = 180;
+        }
+//tecla D
+        if (e.keyCode === 68) {
+          obj.position.x += 2;
+          obj.rotation.y = 290;
+        }
+          
+
+      };
+    
+          obj.position.set(-80, 0.01, 5);
+          obj.scale.set(0.1, 0.1, 0.1);
+          gltf.scene.traverse( function( nodeZombie ) {
+
+if ( nodeZombie.isMesh ) { nodeZombie.castShadow = true; }
+
+} );
+          
+          scene.add(obj);
+          
+        }
+      );
+
+
+      const loaderGLTF2 = new GLTFLoader();
+      loaderGLTF2.load(
+        "House.glb",
+        function (gltf2) {
+          let obj2 = gltf2.scene;
+          obj2.position.set(60, 0.02, 60);
+          obj2.scale.set(1.7, 1.7, 1.7);
+          gltf2.scene.traverse( function( nodeHouse ) {
+
+if ( nodeHouse.isMesh ) { nodeHouse.castShadow = true; }
+
+} );
+          scene.add(obj2);
+        }
+      );
+            
+      const loaderGLTF3 = new GLTFLoader();
+      loaderGLTF3.load(
+        "House2.glb",
+        function (gltf3) {
+          let obj3 = gltf3.scene;
+          obj3.position.set(60, 0.02, -60);
+          obj3.scale.set(3.9, 3.9, 3.9);
+          gltf3.scene.traverse( function( nodeHouse2 ) {
+
+if ( nodeHouse2.isMesh ) { nodeHouse2.castShadow = true; }
+
+} );
+     
+          scene.add(obj3);
+        }
+      );
+
+      const loaderGLTF4 = new GLTFLoader();
+      loaderGLTF4.load( 'wooden_box_free.glb', function( gltf4 ) {
+
+gltf4.scene.traverse( function( node ) {
+
+    if ( node.isMesh ) { node.castShadow = true, node.scale.set(0.2,0.2,0.2), node.position.set(3, 0, 3);}
+
+} );
+
+scene.add( gltf4.scene );
+
+} );
+
+
+
+
+const loaderGLTF5 = new GLTFLoader();
+      loaderGLTF5.load(
+        "Cactus.glb",
+        function (gltf5) {
+          let obj5 = gltf5.scene;
+          obj5.position.set(10, 0.02, 7);
+          obj5.scale.set(0.2, 0.2, 0.2);
+          gltf5.scene.traverse( function( nodeCactus ) {
+
+if ( nodeCactus.isMesh ) { nodeCactus.castShadow = true; }
+
+} );
+     
+          scene.add(obj5);
+        }
+      );
+
+
+      const loaderGLTF6 = new GLTFLoader();
+      loaderGLTF6.load(
+        "Cactus2.glb",
+        function (gltf6) {
+          let obj6 = gltf6.scene;
+          obj6.position.set(15, 0.02, 14);
+          obj6.scale.set(0.9, 0.9, 0.9);
+          gltf6.scene.traverse( function( nodeCactus2 ) {
+
+if ( nodeCactus2.isMesh ) { nodeCactus2.castShadow = true; }
+
+} );
+     
+          scene.add(obj6);
+        }
+      );
+
+
+
+      const loaderGLTF7 = new GLTFLoader();
+      loaderGLTF7.load(
+        "Escopeta.glb",
+        function (gltf7) {
+          let obj7 = gltf7.scene;
+          obj7.position.set(10, 5, 0);
+          obj7.rotation.set(0, 10, 0);
+          obj7.scale.set(2, 2, 2);
+          gltf7.scene.traverse( function( nodeEscopeta ) {
+
+if ( nodeEscopeta.isMesh ) { nodeEscopeta.castShadow = true; }
+
+} );
+     
+          scene.add(obj7);
+        }
+      );
+
+
+      const loaderGLTF8 = new GLTFLoader();
+      loaderGLTF8.load(
+        "Soldado.glb",
+        function (gltf8) {
+          let obj8 = gltf8.scene;
+          document.onkeyup = function (e2) {
+       
+            //flecha arriba
+       if (e2.keyCode === 38) {
+         obj8.position.z -= 2;
+         obj8.rotation.y = 90;
+       }
+       //flecha abajo
+       if (e2.keyCode === 40) {
+         obj8.position.z += 2;
+         obj8.rotation.y = 200;
+       }
+       //flecha izquierda
+       if (e2.keyCode === 37) {
+         obj8.position.x -= 2;
+         obj8.rotation.y = 180;
+       }
+//flecha derecha
+       if (e2.keyCode === 39) {
+         obj8.position.x += 2;
+         obj8.rotation.y = 290;
+       }
+         
+
+     };
+          obj8.position.set(80, 0.5, 10);
+          obj8.rotation.set(0, 5, 0);
+          obj8.scale.set(4.3, 4.3, 4.3);
+          gltf8.scene.traverse( function( nodeSoldado ) {
+
+if ( nodeSoldado.isMesh ) { nodeSoldado.castShadow = true; }
+
+} );
+     
+          scene.add(obj8);
+
+        
+        }
+      );
+
+////////////////
+/*
+const loaderGLTF9 = new GLTFLoader();
+      loaderGLTF9.load( 'bank_from_old_west.glb', function( gltf9 ) {
+
+gltf9.scene.traverse( function( node ) {
+
+    if ( node.isMesh ) { node.castShadow = true, node.scale.set(3.9, 3.9, 3.9), node.position.set (-101,8, 60);}
+
+} );
+
+scene.add( gltf9.scene );
+
+} );
+*/
+
+
+const loaderGLTF9 = new GLTFLoader();
+      loaderGLTF9.load(
+        "bank_from_old_west.glb",
+        function (gltf2) {
+          let obj9 = gltf2.scene;
+          obj9.rotation.y=600;
+          obj9.position.set(90, 0.02, -40);
+          obj9.scale.set(3.9, 3.9, 3.9);
+          gltf2.scene.traverse( function( nodeHouse ) {
+
+if ( nodeHouse.isMesh ) { nodeHouse.castShadow = true; }
+
+} );
+          scene.add(obj9);
+        }
+      );
+
+
+
+const loaderGLTF10 = new GLTFLoader();
+      loaderGLTF10.load( 'west_building-freepoly.org.glb', function( gltf10 ) {
+
+gltf10.scene.traverse( function( node3 ) {
+
+    if ( node3.isMesh ) { node3.castShadow = true, node3.scale.set(3.9, 3.9, 3.9), node3.position.set (100, 600, 0);}
+
+} );
+
+scene.add( gltf10.scene );
+
+} );
+
+
+const loaderGLTF11 = new GLTFLoader();
+      loaderGLTF11.load(
+        "House2.glb",
+        function (gltf11) {
+          let obj11 = gltf11.scene;
+          obj11.position.set(-20, 0.02, -60);
+          obj11.scale.set(3.9, 3.9, 3.9);
+          gltf11.scene.traverse( function( node ) {
+
+if ( node.isMesh ) { node.castShadow = true; }
+
+} );
+     
+          scene.add(obj11);
+        }
+      );
+
+
+      const loaderGLTF12 = new GLTFLoader();
+      loaderGLTF12.load(
+        "House.glb",
+        function (gltf) {
+          let obj12 = gltf.scene;
+          obj12.position.set(-70, 0.02, 60);
+          obj12.scale.set(1.7, 1.7, 1.7);
+          gltf.scene.traverse( function( node ) {
+
+if ( node.isMesh ) { node.castShadow = true; }
+
+} );
+          scene.add(obj12);
+        }
+      );
+
+      const loaderGLTF13 = new GLTFLoader();
+      loaderGLTF13.load(
+        "House.glb",
+        function (gltf) {
+          let obj13 = gltf.scene;
+          obj13.rotation.y=300;
+          obj13.position.set(-60, 0.02, -60);
+          obj13.scale.set(1.7, 1.7, 1.7);
+          
+          gltf.scene.traverse( function( node ) {
+
+if ( node.isMesh ) { node.castShadow = true; }
+
+} );
+          scene.add(obj13);
+        }
+      );
+
+      const loaderGLTF14 = new GLTFLoader();
+      loaderGLTF14.load(
+        "west_building-freepoly.org.glb",
+        function (gltf2) {
+          let obj14 = gltf2.scene;
+          obj14.rotation.y=600;
+          obj14.position.set(-10, 0.02, 60);
+          obj14.scale.set(3.9, 3.9, 3.9);
+          gltf2.scene.traverse( function( nodeHouse ) {
+
+if ( nodeHouse.isMesh ) { nodeHouse.castShadow = true; }
+
+} );
+          scene.add(obj14);
+        }
+      );
+          
+      const loaderGLTF15 = new GLTFLoader();
+      loaderGLTF15.load(
+        "bank_from_old_west.glb",
+        function (gltf2) {
+          let obj15 = gltf2.scene;
+          obj15.rotation.y=0;
+          obj15.position.set(15, 0.02, 45);
+          obj15.scale.set(3.9, 3.9, 3.9);
+          gltf2.scene.traverse( function( nodeHouse ) {
+
+if ( nodeHouse.isMesh ) { nodeHouse.castShadow = true; }
+
+} );
+          scene.add(obj15);
+        }
+      );
+
+
+      const loaderGLTF16 = new GLTFLoader();
+      loaderGLTF16.load(
+        "bank_from_old_west.glb",
+        function (gltf2) {
+          let obj16 = gltf2.scene;
+          obj16.rotation.y=600;
+          obj16.position.set(-110, 0.02, -40);
+          obj16.scale.set(3.9, 3.9, 3.9);
+          gltf2.scene.traverse( function( nodeHouse ) {
+
+if ( nodeHouse.isMesh ) { nodeHouse.castShadow = true; }
+
+} );
+          scene.add(obj16);
+        }
+      );
+
+
+
+
+/////
+/*
+      const loaderFBX9 = new FBXLoader();
+      loaderFBX9.load( "Warzombie F Pedroso.fbx",(fbx)=> {
+        fbx.scale.setScalar(0.5);
+        fbx.traverse(c=>{
+          c.castShadow=true;
+        });
+        scene.add(fbx);
+      });
+*/
+///////////
+     
+
+      function animate() {
+        cube2BB
+          .copy(cube2.geometry.boundingBox)
+          .applyMatrix4(cube2.matrixWorld);
+
+
+
+
+
+        checkCollisions();
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+    </script>
+    
+  </body>
+</html>
