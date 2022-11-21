@@ -19,12 +19,56 @@
       //import {FBXLoader } from './FBXLoader.js';
       import {FBXLoader} from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
       import { STLLoader } from "./STLLoader.js";
+      import Timer from "./timer.js";
 
-      var scene, camera, renderer, _controls;
+      var scene, camera, renderer;
       var meshFloor;
 
       var keyboard = {};
-      var player = {speed: 0.5, turnspeed: 0.02, model: null, canShoot: 0, bullets: [], ammo:10 , life: 100};
+      var player = {speed: 0.5, turnspeed: 0.02, model: null, bb: null, canShoot: 0, bullets: [], bulletscoll: [], ammo:10 , life: 100, points: 0};
+      var pause = false;
+      var gameover = false;
+
+      var models = {
+        casa : {
+          glb: "House.glb",
+          mesh: null
+        },
+        bank : {
+          glb: "bank_from_old_west.glb",
+          mesh: null
+        },
+        casa2 : {
+          glb: "House2.glb",
+          mesh: null
+        },
+        cactus : {
+          glb: "Cactus.glb",
+          mesh: null
+        },
+        cactus2 : {
+          glb: "Cactus2.glb",
+          mesh: null
+        },
+        saloon : {
+          glb: "west_building-freepoly.org.glb",
+          mesh: null
+        },
+        zombie : {
+          glb: "Zombie.glb",
+          mesh: null
+        },
+        caja : {
+          glb: "wooden_box_free.glb",
+          mesh: null
+        }
+      }
+      var meshes = {};
+      var items= {};
+
+      var zombies= {};
+
+      var tempo = new Timer(60);
 
       var loadingScreen = {
         scene: new THREE.Scene(),
@@ -39,21 +83,20 @@
       };
       var loadingManager = null;
       var RESOURCES_LOADED = false;
-
       
       function init(){
-
+        
         // SCENE
         scene = new THREE.Scene();
         scene.background = new THREE.Color("#34495E");
-        scene.fog = new THREE.Fog(0xffffff,0,500)
+        scene.fog = new THREE.Fog(0x404040,0,500)
 
         camera = new THREE.PerspectiveCamera(
           60,
           window.innerWidth / window.innerHeight, 1, 1000
         );
         camera.rotation.y = Math.PI * .5;
-        camera.position.set(80, 8, 0);
+        camera.position.set(80, 5, 0);
 
         // Set up the loading screen's scene.
         // It can be treated just like our main scene.
@@ -72,6 +115,8 @@
         loadingManager.onLoad = function(){
           console.log("loaded all resources");
           RESOURCES_LOADED = true;
+          onResourcesLoaded();
+          tempo.start();
         };
 
         const loader = new THREE.TextureLoader();
@@ -86,12 +131,13 @@
         document.body.appendChild(renderer.domElement);
 
         // Lights
-        const hemispherelight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
-        scene.add(hemispherelight);
+        const light = new THREE.AmbientLight( 0x404040 ); // soft white light
+        scene.add( light );
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(10, 50, 200);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, .8);
+        directionalLight.position.set(0, 50, 50);
         directionalLight.castShadow = true;
+
 
         // Plane
         var texture = new THREE.TextureLoader().load( "./Imagenes/Tierra-de-desierto.jpg" );
@@ -104,13 +150,9 @@
         meshFloor.rotateX(-Math.PI / 2);
 
         // Adding to scene
-        scene.add( meshFloor, hemispherelight, directionalLight);
+        scene.add( meshFloor, directionalLight);
 
         //const cameraControl = new OrbitControls(camera, renderer.domElement);
-
-        function checkCollisions() {
-          
-        }
 
         // Resize
 
@@ -122,88 +164,242 @@
         }
         window.addEventListener("resize", resize);
 
-        // Loaders
-        //Load Zombie
-        const loaderGLTF = new GLTFLoader(loadingManager);
-        loaderGLTF.load(
-          "Zombie.glb",
-          function (gltf) {
-            let obj = gltf.scene;
-            obj.position.set(-80, 0.01, 5);
-            obj.scale.set(0.1, 0.1, 0.1);
-            gltf.scene.traverse( function( nodeZombie ) {
-              if ( nodeZombie.isMesh ) { nodeZombie.castShadow = true; }
-            } );
-            scene.add(obj);
-          }
-        );
+        modelos();
+        animate();
+      }
 
-        //Load Edificio1
-        const loaderGLTF2 = new GLTFLoader(loadingManager);
-        loaderGLTF2.load(
-          "House.glb",
-          function (gltf2) {
-            let obj2 = gltf2.scene;
-            obj2.position.set(60, 0.02, 60);
-            obj2.scale.set(1.7, 1.7, 1.7);
-            gltf2.scene.traverse( function( nodeHouse ) {
-              if ( nodeHouse.isMesh ) { nodeHouse.castShadow = true; }
-            } );
-            scene.add(obj2);
+      function checkCollisions() {
+        if(items["ammo1BB"].consumed == false){
+          if(player.bb.intersectsBox(items.ammo1BB.coll)){
+            scene.remove(items["ammo1BB"].item);
+            items.ammo1BB.consumed = true;
+            player.ammo +=10;
+            console.log(player.ammo);
           }
-        );
-        //Load Edificio2      
-        const loaderGLTF3 = new GLTFLoader(loadingManager);
-        loaderGLTF3.load(
-          "House2.glb",
-          function (gltf3) {
-            let obj3 = gltf3.scene;
-            obj3.position.set(60, 0.02, -60);
-            obj3.scale.set(3.9, 3.9, 3.9);
-            gltf3.scene.traverse( function( nodeHouse2 ) {
-              if ( nodeHouse2.isMesh ) { nodeHouse2.castShadow = true; }
-            } );
-            scene.add(obj3);
+        }
+        if(items["ammo2BB"].consumed == false){
+          if(player.bb.intersectsBox(items.ammo2BB.coll)){
+            scene.remove(items["ammo2BB"].item);
+            items.ammo2BB.consumed = true;
+            player.ammo +=10;
+            console.log(player.ammo);
           }
-        );
+        }
+        if(items["life1BB"].consumed == false){
+          if(player.bb.intersectsBox(items.life1BB.coll)){
+            scene.remove(items["life1BB"].item);
+            items.life1BB.consumed = true;
+            player.life +=30;
+            if(player.life > 120) player.life = 100;
+            console.log(player.life);
+          }
+        }
+        if(items["life2BB"].consumed == false){
+          if(player.bb.intersectsBox(items.ammo1BB.coll)){
+            scene.remove(items["life2BB"].item);
+            items.life2BB.consumed = true;
+            player.life +=30;
+            if(player.life > 120) player.life = 100;
+            console.log("la vida del jugador es: ", player.life);
+          }
+        }
+        if(items["time1BB"].consumed == false){
+          if(player.bb.intersectsBox(items.time1BB.coll)){
+            scene.remove(items["time1BB"].item);
+            items.time1BB.consumed = true;
+            console.log("aumento el tiempo + 20seg");
+            tempo.remainingSeconds = tempo.remainingSeconds + 20;
+          }
+        }
+        if(items["bomba1BB"].consumed == false){
+          if(player.bb.intersectsBox(items.bomba1BB.coll)){
+            scene.remove(items["bomba1BB"].item);
+            items.bomba1BB.consumed = true;
+            player.life = player.life-50;
+            console.log("la vida del jugador es: ", player.life);
+          }
+        }
+
+
+        for(var index = 0; index <player.bulletscoll.length; index+=1){
+          if(player.bulletscoll[index].intersectsBox(zombies["zombie1BB"])) {
+            console.log("si pego xd");
+            scene.remove(player.bullets[index]);
+            player.bullets[index].alive = false;
+            player.bulletscoll.splice(index,1);
+            player.bullets.splice(index,1);
+          };
+        }
+
+      }
+
+      function onResourcesLoaded(){
+        meshes["casa.1"] = models.casa.mesh.clone();
+        meshes["casa.1"].position.set(60, 0.02, 60);
+        meshes["casa.1"].scale.set(1.7, 1.7, 1.7);
+        scene.add(meshes["casa.1"]);
+        meshes["casa.2"] = models.casa.mesh.clone();
+        meshes["casa.2"].position.set(-70, 0.02, 60);
+        meshes["casa.2"].scale.set(1.7, 1.7, 1.7);
+        scene.add(meshes["casa.2"]);
+        meshes["casa.3"] = models.casa.mesh.clone();
+        meshes["casa.3"].rotation.y=300;
+        meshes["casa.3"].position.set(-60, 0.02, -60);
+        meshes["casa.3"].scale.set(1.7, 1.7, 1.7);
+        scene.add(meshes["casa.3"]);
+
+        meshes["bank.1"] = models.bank.mesh.clone();
+        meshes["bank.1"].rotation.y=600;
+        meshes["bank.1"].position.set(90, 0.02, -40);
+        meshes["bank.1"].scale.set(3.9, 3.9, 3.9);
+        scene.add(meshes["bank.1"]);
+        meshes["bank.2"] = models.bank.mesh.clone();
+        meshes["bank.2"].rotation.y=0;
+        meshes["bank.2"].position.set(15, 0.02, 45);
+        meshes["bank.2"].scale.set(3.9, 3.9, 3.9);
+        scene.add(meshes["bank.2"]);
+        meshes["bank.3"] = models.bank.mesh.clone();
+        meshes["bank.3"].rotation.y=600;
+        meshes["bank.3"].position.set(-110, 0.02, -40);
+        meshes["bank.3"].scale.set(3.9, 3.9, 3.9);
+        scene.add(meshes["bank.3"]);
+
+        meshes["casa2.1"] = models.casa2.mesh.clone();
+        meshes["casa2.1"].position.set(60, 0.02, -60);
+        meshes["casa2.1"].scale.set(3.9, 3.9, 3.9);
+        scene.add(meshes["casa2.1"]);
+        meshes["casa2.2"] = models.casa2.mesh.clone();
+        meshes["casa2.2"].position.set(-20, 0.02, -60);
+        meshes["casa2.2"].scale.set(3.9, 3.9, 3.9);
+        scene.add(meshes["casa2.2"]);
+
+        meshes["saloon.1"] = models.saloon.mesh.clone();
+        meshes["saloon.1"].rotation.y=600;
+        meshes["saloon.1"].position.set(-10, 0.02, 60);
+        meshes["saloon.1"].scale.set(3.9, 3.9, 3.9);
+        scene.add(meshes["saloon.1"]);
+        meshes["saloon.2"] = models.saloon.mesh.clone();
+        meshes["saloon.2"].scale.set(3.9, 3.9, 3.9);
+        meshes["saloon.2"].position.set (15, 0.02, -60);
+        scene.add(meshes["saloon.2"]);
+
+        meshes["cactus.1"] = models.cactus.mesh.clone();
+        meshes["cactus.1"].position.set(10, 0.02, 7);
+        meshes["cactus.1"].scale.set(0.2, 0.2, 0.2);
+        scene.add(meshes["cactus.1"]);
+
+        meshes["cactus2.1"] = models.cactus2.mesh.clone();
+        meshes["cactus2.1"].position.set(15, 0.02, 14);
+        meshes["cactus2.1"].scale.set(0.9, 0.9, 0.9);
+        scene.add(meshes["cactus2.1"]);
+
+        meshes["caja.1"] = models.caja.mesh.clone();
+        meshes["caja.1"].scale.set(0.3,0.3,0.3);
+        meshes["caja.1"].position.set(63, 2, 92);
+        let ammo1BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.1"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(ammo1BB.item);
+        ammo1BB.coll.setFromObject(meshes["caja.1"]);
+        items["ammo1BB"] = ammo1BB;
+
+        meshes["caja.2"] = models.caja.mesh.clone();
+        meshes["caja.2"].scale.set(0.3,0.3,0.3);
+        meshes["caja.2"].position.set(-44, 2, 57);
+        let ammo2BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.2"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(ammo2BB.item);
+        ammo2BB.coll.setFromObject(meshes["caja.2"]);
+        items["ammo2BB"] = ammo2BB;
+
+        meshes["caja.3"] = models.caja.mesh.clone();
+        meshes["caja.3"].scale.set(0.3,0.3,0.3);
+        meshes["caja.3"].position.set(112, 2, -64);
+        let life1BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.3"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(life1BB.item);
+        life1BB.coll.setFromObject(meshes["caja.3"]);
+        items["life1BB"] = life1BB;
+
+        meshes["caja.4"] = models.caja.mesh.clone();
+        meshes["caja.4"].scale.set(0.3,0.3,0.3);
+        meshes["caja.4"].position.set(-91, 2, -71);
+        let life2BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.4"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(life2BB.item);
+        life2BB.coll.setFromObject(meshes["caja.4"]);
+        items["life2BB"] = life2BB;
+
+        meshes["caja.5"] = models.caja.mesh.clone();
+        meshes["caja.5"].scale.set(0.3,0.3,0.3);
+        meshes["caja.5"].position.set(-167, 2, -10);
+        let time1BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.5"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(time1BB.item);
+        time1BB.coll.setFromObject(meshes["caja.5"]);
+        items["time1BB"] = time1BB;
+
+        meshes["caja.6"] = models.caja.mesh.clone();
+        meshes["caja.6"].scale.set(0.3,0.3,0.3);
+        meshes["caja.6"].position.set(5, 2, -55);
+        let bomba1BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.6"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(bomba1BB.item);
+        bomba1BB.coll.setFromObject(meshes["caja.6"]);
+        items["bomba1BB"] = bomba1BB;
         
-        //Load Caja
-        const loaderGLTF4 = new GLTFLoader(loadingManager);
-        loaderGLTF4.load( 'wooden_box_free.glb', function( gltf4 ) {
-          gltf4.scene.traverse( function( node ) {
-            if ( node.isMesh ) { node.castShadow = true, node.scale.set(0.2,0.2,0.2), node.position.set(3, 0, 3);}
-          } );
-          scene.add( gltf4.scene );
-        } );
 
-        //Load Cactus
-        const loaderGLTF5 = new GLTFLoader(loadingManager);
-        loaderGLTF5.load(
-          "Cactus.glb",
-          function (gltf5) {
-            let obj5 = gltf5.scene;
-            obj5.position.set(10, 0.02, 7);
-            obj5.scale.set(0.2, 0.2, 0.2);
-            gltf5.scene.traverse( function( nodeCactus ) {
-              if ( nodeCactus.isMesh ) { nodeCactus.castShadow = true; }
-            } );
-            scene.add(obj5);
-          }
-        );
-        const loaderGLTF6 = new GLTFLoader(loadingManager);
-        loaderGLTF6.load(
-          "Cactus2.glb",
-          function (gltf6) {
-            let obj6 = gltf6.scene;
-            obj6.position.set(15, 0.02, 14);
-            obj6.scale.set(0.9, 0.9, 0.9);
-            gltf6.scene.traverse( function( nodeCactus2 ) {
-              if ( nodeCactus2.isMesh ) { nodeCactus2.castShadow = true; }
-          } );
-            scene.add(obj6);
-          }
-        );
+        meshes["zombie.1"] = models.zombie.mesh.clone();
+        meshes["zombie.1"].position.set(-80, 0.01, 5);
+        meshes["zombie.1"].scale.set(0.1, 0.1, 0.1);
+        scene.add(meshes["zombie.1"]);
+        zombies["zombie1BB"] = new THREE.Box3();
+        zombies["zombie1BB"].setFromObject(meshes["zombie.1"]);
+        
+      }
 
+      function modelos(){
+
+        for (var _key in models){
+          (function(key){
+            var loader = new GLTFLoader(loadingManager);
+            loader.load(models[key].glb, function( mesh ) {
+                mesh.scene.traverse(function(node){
+                  if (node instanceof THREE.Mesh){
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                  }
+                });
+                models[key].mesh = mesh.scene;
+              });
+          })(_key);
+        }
+
+        // Loaders
+        
         const loaderGLTF7 = new GLTFLoader(loadingManager);
         loaderGLTF7.load(
           "Escopeta.glb",
@@ -234,150 +430,9 @@
             scene.add(player.model);
           }
         );
-
-        ////////////////
-        /*
-        const loaderGLTF9 = new GLTFLoader();
-              loaderGLTF9.load( 'bank_from_old_west.glb', function( gltf9 ) {
-
-        gltf9.scene.traverse( function( node ) {
-
-            if ( node.isMesh ) { node.castShadow = true, node.scale.set(3.9, 3.9, 3.9), node.position.set (-101,8, 60);}
-
-        } );
-
-        scene.add( gltf9.scene );
-
-        } );
-        */
-
-
-        const loaderGLTF9 = new GLTFLoader(loadingManager);
-        loaderGLTF9.load(
-          "bank_from_old_west.glb",
-          function (gltf2) {
-            let obj9 = gltf2.scene;
-            obj9.rotation.y=600;
-            obj9.position.set(90, 0.02, -40);
-            obj9.scale.set(3.9, 3.9, 3.9);
-            gltf2.scene.traverse( function( nodeHouse ) {
-              if ( nodeHouse.isMesh ) { nodeHouse.castShadow = true; }
-            } );
-            scene.add(obj9);
-          }
-        );
-
-        const loaderGLTF10 = new GLTFLoader(loadingManager);
-        loaderGLTF10.load( 'west_building-freepoly.org.glb', function( gltf10 ) {
-          gltf10.scene.traverse( function( node3 ) {
-            if ( node3.isMesh ) { node3.castShadow = true, node3.scale.set(3.9, 3.9, 3.9), node3.position.set (100, 600, 0);}
-          } );
-          scene.add( gltf10.scene );
-        } );
-        const loaderGLTF11 = new GLTFLoader(loadingManager);
-        loaderGLTF11.load(
-          "House2.glb",
-          function (gltf11) {
-            let obj11 = gltf11.scene;
-            obj11.position.set(-20, 0.02, -60);
-            obj11.scale.set(3.9, 3.9, 3.9);
-            gltf11.scene.traverse( function( node ) {
-              if ( node.isMesh ) { node.castShadow = true; }
-            } );
-            scene.add(obj11);
-          }
-        );
-
-        const loaderGLTF12 = new GLTFLoader(loadingManager);
-        loaderGLTF12.load(
-          "House.glb",
-          function (gltf) {
-            let obj12 = gltf.scene;
-            obj12.position.set(-70, 0.02, 60);
-            obj12.scale.set(1.7, 1.7, 1.7);
-            gltf.scene.traverse( function( node ) {
-              if ( node.isMesh ) { node.castShadow = true; }
-            } );
-            scene.add(obj12);
-          }
-        );
-
-        const loaderGLTF13 = new GLTFLoader(loadingManager);
-        loaderGLTF13.load(
-          "House.glb",
-          function (gltf) {
-            let obj13 = gltf.scene;
-            obj13.rotation.y=300;
-            obj13.position.set(-60, 0.02, -60);
-            obj13.scale.set(1.7, 1.7, 1.7);
-            gltf.scene.traverse( function( node ) {
-              if ( node.isMesh ) { node.castShadow = true; }
-            } );
-            scene.add(obj13);
-          }
-        );
-
-        const loaderGLTF14 = new GLTFLoader(loadingManager);
-        loaderGLTF14.load(
-          "west_building-freepoly.org.glb",
-          function (gltf2) {
-            let obj14 = gltf2.scene;
-            obj14.rotation.y=600;
-            obj14.position.set(-10, 0.02, 60);
-            obj14.scale.set(3.9, 3.9, 3.9);
-            gltf2.scene.traverse( function( nodeHouse ) {
-              if ( nodeHouse.isMesh ) { nodeHouse.castShadow = true; }
-            } );
-            scene.add(obj14);
-          }
-        );
-            
-        const loaderGLTF15 = new GLTFLoader(loadingManager);
-        loaderGLTF15.load(
-          "bank_from_old_west.glb",
-          function (gltf2) {
-            let obj15 = gltf2.scene;
-            obj15.rotation.y=0;
-            obj15.position.set(15, 0.02, 45);
-            obj15.scale.set(3.9, 3.9, 3.9);
-            gltf2.scene.traverse( function( nodeHouse ) {
-              if ( nodeHouse.isMesh ) { nodeHouse.castShadow = true; }
-            } );
-            scene.add(obj15);
-          }
-        );
-
-        const loaderGLTF16 = new GLTFLoader(loadingManager);
-        loaderGLTF16.load(
-          "bank_from_old_west.glb",
-          function (gltf2) {
-            let obj16 = gltf2.scene;
-            obj16.rotation.y=600;
-            obj16.position.set(-110, 0.02, -40);
-            obj16.scale.set(3.9, 3.9, 3.9);
-            gltf2.scene.traverse( function( nodeHouse ) {
-              if ( nodeHouse.isMesh ) { nodeHouse.castShadow = true; }
-            } );
-            scene.add(obj16);
-          }
-        );
-
-        /////
-        /*
-              const loaderFBX9 = new FBXLoader();
-              loaderFBX9.load( "Warzombie F Pedroso.fbx",(fbx)=> {
-                fbx.scale.setScalar(0.5);
-                fbx.traverse(c=>{
-                  c.castShadow=true;
-                });
-                scene.add(fbx);
-              });
-        */
-        ///////////
-
         
-
-        animate();
+        player.bb = new THREE.Sphere(new THREE.Vector3(80, 0.5, 0),3);
+        
       }
 
       function disparo(){
@@ -385,10 +440,12 @@
           if(player.bullets[index]== undefined) continue;
           if(player.bullets[index].alive == false){
             player.bullets.splice(index,1);
+            player.bulletscoll.splice(index,1);
             continue;
           }
 
           player.bullets[index].position.add(player.bullets[index].velocity);
+          player.bulletscoll[index].center = player.bullets[index].position;
         }
         if(player.canShoot>0) player.canShoot -=1;
       }
@@ -399,24 +456,29 @@
           camera.position.z -= Math.cos(camera.rotation.y) * player.speed;
           player.model.position.x -= Math.sin(camera.rotation.y) * player.speed;
           player.model.position.z -= Math.cos(camera.rotation.y) * player.speed;
+          player.bb.center =  player.model.position;
+          
         }
         if(keyboard[83]){ // s
           camera.position.x += Math.sin(camera.rotation.y) * player.speed;
           camera.position.z += Math.cos(camera.rotation.y) * player.speed;
           player.model.position.x += Math.sin(camera.rotation.y) * player.speed;
           player.model.position.z += Math.cos(camera.rotation.y) * player.speed;
+          player.bb.center =  player.model.position;
         }
         if(keyboard[65]){ // a
           camera.position.x += Math.sin(camera.rotation.y - Math.PI/2) * player.speed;
           camera.position.z += Math.cos(camera.rotation.y - Math.PI/2) * player.speed;
           player.model.position.x += Math.sin(camera.rotation.y - Math.PI/2) * player.speed;
           player.model.position.z += Math.cos(camera.rotation.y - Math.PI/2) * player.speed;
+          player.bb.center =  player.model.position;
         }
         if(keyboard[68]){ // d
           camera.position.x += Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
           camera.position.z += Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
           player.model.position.x += Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
           player.model.position.z += Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
+          player.bb.center =  player.model.position;
         }
         
         if(keyboard[37]){
@@ -432,13 +494,16 @@
           camera.position.z -= Math.cos(camera.rotation.y) * player.speed;
           player.model.position.x -= Math.sin(camera.rotation.y) * player.speed;
           player.model.position.z -= Math.cos(camera.rotation.y) * player.speed;
+          player.bb.center =  player.model.position;
         }
         if(keyboard[40]){
           camera.position.x += Math.sin(camera.rotation.y) * player.speed;
           camera.position.z += Math.cos(camera.rotation.y) * player.speed;
           player.model.position.x += Math.sin(camera.rotation.y) * player.speed;
           player.model.position.z += Math.cos(camera.rotation.y) * player.speed;
+          player.bb.center =  player.model.position;
         }
+        
         disparo();
         if(keyboard[32] && player.canShoot <=0 && player.ammo >0){
           var bullet = new THREE.Mesh(
@@ -446,35 +511,62 @@
             new THREE.MeshBasicMaterial({color:0xffffff})
           );
           bullet.position.set(player.model.position.x,player.model.position.y,player.model.position.z);
+          var bulletSphere = new THREE.Sphere(bullet.position,.2);
           bullet.velocity = new THREE.Vector3(
+            -Math.sin(camera.rotation.y),
+            0,
+            -Math.cos(camera.rotation.y),
+          );
+          bulletSphere.velocity = new THREE.Vector3(
             -Math.sin(camera.rotation.y),
             0,
             -Math.cos(camera.rotation.y),
           );
 
           bullet.alive = true;
+          bulletSphere.alive = true;
           setTimeout(function(){
             bullet.alive = false;
+            bulletSphere.alive = false;
             scene.remove(bullet);
+            bulletSphere = null;
           }, 2000);
           player.bullets.push(bullet);
+          player.bulletscoll.push(bulletSphere);
           player.ammo -= 1;
           scene.add(bullet);
           player.canShoot = 15;
         }
       }
 
-      function animate() {
-        if (player.model != undefined) {
-          //var relativeCameraOffset = new THREE.Vector3(10,4,0);
-          //var cameraOffset = player.model.localToWorld (relativeCameraOffset);
-          //camera.position.copy (cameraOffset);
-          //camera.lookAt( player.model.position );
+      function animacionitems(){
+        
+        for (var _key in items){
+          (function(key){
+            if (items[key].item.position.y >= 4 && items[key].arriba == true){
+              items[key].arriba = false;
+            } 
+            if (items[key].item.position.y <= 2 && items[key].arriba == false){
+              items[key].arriba = true;
+            }
+            
+            if(items[key].arriba == true){
+              items[key].item.position.y += .02;
+            } 
+            if(items[key].arriba == false) {
+              items[key].item.position.y -= .02;
+            }
+            
+            items[key].item.rotation.y += 0.01;
+          })(_key);
         }
+      }
 
+      function animate() {
+        
         if( RESOURCES_LOADED == false ){
           requestAnimationFrame(animate);
-          
+            
           loadingScreen.box.position.x -= 0.05;
           if( loadingScreen.box.position.x < -10 ) loadingScreen.box.position.x = 10;
           loadingScreen.box.position.y = Math.sin(loadingScreen.box.position.x);
@@ -483,12 +575,37 @@
           return; // Stop the function here.
         }
 
+        document.onkeydown = function (e){
+          if(e.keyCode === 80 && (tempo.remainingSeconds != 0)){
+            if(pause == true) {
+              
+              tempo.start();
+              pause = false;
+            } else {
+              console.log("en pausa"); 
+              tempo.pause();
+              pause = true;
+            };
+          }
+          if(e.keyCode === 88){
+            console.log(player.model.position);
+          }
+          //console.log(e.keyCode);
+        }
+
         requestAnimationFrame(animate);
+        if(pause == false && gameover == false){
+          if(player.life <= 0 || tempo.remainingSeconds == 0){
+            gameover = true;
+            console.log("game over");
+          }
 
-        teclao();
-
+          
+          animacionitems();
+          checkCollisions();
+          teclao();
+        }
         renderer.render(scene, camera);
-
       }
 
       function keyDown(event){
@@ -497,8 +614,6 @@
       function keyUp(event){
         keyboard[event.keyCode] = false;
       }
-
-      
 
       window.addEventListener('keydown', keyDown);     
       window.addEventListener('keyup', keyUp);      
