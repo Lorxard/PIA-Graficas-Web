@@ -61,6 +61,10 @@
         caja : {
           glb: "wooden_box_free.glb",
           mesh: null
+        },
+        carro:{
+          glb:"carro.glb",
+          mesh: null
         }
       }
       var meshes = {};
@@ -89,7 +93,7 @@
         // SCENE
         scene = new THREE.Scene();
         scene.background = new THREE.Color("#34495E");
-        scene.fog = new THREE.Fog(0x404040,0,500)
+        //scene.fog = new THREE.Fog(0x404040,0,500)
 
         camera = new THREE.PerspectiveCamera(
           60,
@@ -124,6 +128,16 @@
           scene.background = texture;
         });
 
+        var texturaSky = new THREE.TextureLoader().load( "./Imagenes/dry_sky.jpg" );
+        var meshSky = new THREE.Mesh(
+          new THREE.SphereGeometry(500, 25, 25),
+          new THREE.MeshPhongMaterial({ map: texturaSky })
+        );
+        meshSky.material.side= THREE.BackSide;
+
+        
+        scene.add(meshSky);
+
         // RENDERER
         renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -131,26 +145,48 @@
         document.body.appendChild(renderer.domElement);
 
         // Lights
-        const light = new THREE.AmbientLight( 0x404040 ); // soft white light
+        const light = new THREE.AmbientLight( 0xffffff ); // soft white light
         scene.add( light );
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, .8);
-        directionalLight.position.set(0, 50, 50);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, .1);
+        directionalLight.position.set(0, 100, 50);
         directionalLight.castShadow = true;
+        scene.add( directionalLight);
 
 
         // Plane
-        var texture = new THREE.TextureLoader().load( "./Imagenes/Tierra-de-desierto.jpg" );
+        var texture = new THREE.TextureLoader().load( "./Imagenes/tierra_seca.jpg" );
+          texture.wrapS=THREE.RepeatWrapping;
+          texture.wrapT=THREE.RepeatWrapping;
+          texture.repeat.set( 20,20 );
+
+          var textureD = new THREE.TextureLoader().load( "./Imagenes/tierra_seca_dis.jpg" );
+          textureD.wrapS=THREE.RepeatWrapping;
+          textureD.wrapT=THREE.RepeatWrapping;
+          textureD.repeat.set( 20,20 );
+
+          var textureN = new THREE.TextureLoader().load( "./Imagenes/tierra_seca_norm.jpg" );
+          textureN.wrapS=THREE.RepeatWrapping;
+          textureN.wrapT=THREE.RepeatWrapping;
+          textureN.repeat.set( 20,20 );
+
+
         meshFloor = new THREE.Mesh(
           new THREE.PlaneGeometry(500, 300),
-          new THREE.MeshPhongMaterial({ map: texture })
+          new THREE.MeshStandardMaterial({ 
+          map: texture,
+          displacementMap: textureD,
+          displacementScale: .6,
+          normalMap: textureN
+         })
         );
+        
         meshFloor.position.set(15, -0.5, 15);
         meshFloor.receiveShadow = true;
         meshFloor.rotateX(-Math.PI / 2);
 
         // Adding to scene
-        scene.add( meshFloor, directionalLight);
+        scene.add( meshFloor);
 
         //const cameraControl = new OrbitControls(camera, renderer.domElement);
 
@@ -250,17 +286,17 @@
 
         meshes["bank.1"] = models.bank.mesh.clone();
         meshes["bank.1"].rotation.y=600;
-        meshes["bank.1"].position.set(90, 0.02, -40);
+        meshes["bank.1"].position.set(90, 2.02, -40);
         meshes["bank.1"].scale.set(3.9, 3.9, 3.9);
         scene.add(meshes["bank.1"]);
         meshes["bank.2"] = models.bank.mesh.clone();
         meshes["bank.2"].rotation.y=0;
-        meshes["bank.2"].position.set(15, 0.02, 45);
+        meshes["bank.2"].position.set(15, 2.02, 45);
         meshes["bank.2"].scale.set(3.9, 3.9, 3.9);
         scene.add(meshes["bank.2"]);
         meshes["bank.3"] = models.bank.mesh.clone();
         meshes["bank.3"].rotation.y=600;
-        meshes["bank.3"].position.set(-110, 0.02, -40);
+        meshes["bank.3"].position.set(-110, 2.02, -40);
         meshes["bank.3"].scale.set(3.9, 3.9, 3.9);
         scene.add(meshes["bank.3"]);
 
@@ -283,19 +319,80 @@
         meshes["saloon.2"].position.set (15, 0.02, -60);
         scene.add(meshes["saloon.2"]);
 
-        meshes["cactus.1"] = models.cactus.mesh.clone();
-        meshes["cactus.1"].position.set(10, 0.02, 7);
-        meshes["cactus.1"].scale.set(0.2, 0.2, 0.2);
+        meshes["cactus.1"] = models.cactus2.mesh.clone();
+        meshes["cactus.1"].position.set(50, 0.02, -15);
+        meshes["cactus.1"].scale.set(0.9, 0.9, 0.9);
+        meshes["cactus.1"].rotation.set(0,2.79253,0);
         scene.add(meshes["cactus.1"]);
+
+        meshes["cactus.2"] = models.cactus2.mesh.clone();
+        meshes["cactus.2"].position.set(35, 0.02, 50);
+        meshes["cactus.2"].scale.set(0.9, 0.9, 0.9);
+        scene.add(meshes["cactus.2"]);
+
+        meshes["cactus.3"] = models.cactus.mesh.clone();
+        meshes["cactus.3"].position.set(-90, 0.02, 40);
+        meshes["cactus.3"].scale.set(0.2, 0.2, 0.2);
+        meshes["cactus.3"].rotation.set(0,2.79253,0);
+        scene.add(meshes["cactus.3"]);
+
+        meshes["cactus.4"] = models.cactus.mesh.clone();
+        meshes["cactus.4"].position.set(-90, 0.02, -40);
+        meshes["cactus.4"].scale.set(0.2, 0.2, 0.2);
+        meshes["cactus.4"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus.4"]);
+
+        meshes["cactus.5"] = models.cactus.mesh.clone();
+        meshes["cactus.5"].position.set(-40, 0.02, -70);
+        meshes["cactus.5"].scale.set(0.2, 0.2, 0.2);
+        meshes["cactus.5"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus.5"]);
+
+        meshes["cactus.6"] = models.cactus.mesh.clone();
+        meshes["cactus.6"].position.set(80, 0.02, -20);
+        meshes["cactus.6"].scale.set(0.2, 0.2, 0.2);
+        meshes["cactus.6"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus.6"]);
+
+
 
         meshes["cactus2.1"] = models.cactus2.mesh.clone();
         meshes["cactus2.1"].position.set(15, 0.02, 14);
         meshes["cactus2.1"].scale.set(0.9, 0.9, 0.9);
+        meshes["cactus2.1"].rotation.set(0,2.,0);
         scene.add(meshes["cactus2.1"]);
+
+
+        meshes["cactus2.2"] = models.cactus2.mesh.clone();
+        meshes["cactus2.2"].position.set(-50, 0.02, -14);
+        meshes["cactus2.2"].scale.set(0.9, 0.9, 0.9);
+        meshes["cactus2.2"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus2.2"]);
+
+        meshes["cactus2.3"] = models.cactus2.mesh.clone();
+        meshes["cactus2.3"].position.set(70, 0.02, -30);
+        meshes["cactus2.3"].scale.set(0.9, 0.9, 0.9);
+        meshes["cactus2.3"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus2.3"]);
+
+        meshes["cactus2.4"] = models.cactus2.mesh.clone();
+        meshes["cactus2.4"].position.set(100, 0.02, 80);
+        meshes["cactus2.4"].scale.set(0.9, 0.9, 0.9);
+        meshes["cactus2.4"].rotation.set(0,3,0);
+        scene.add(meshes["cactus2.4"]);
 
         meshes["caja.1"] = models.caja.mesh.clone();
         meshes["caja.1"].scale.set(0.3,0.3,0.3);
         meshes["caja.1"].position.set(63, 2, 92);
+
+        meshes["carro.1"] = models.carro.mesh.clone();
+        meshes["carro.1"].position.set(10, 1.5, -25);
+        meshes["carro.1"].scale.set(2, 2, 2);
+        meshes["carro.1"].rotation.set(0,0.785398,0);
+        scene.add(meshes["carro.1"]);
+
+
+
         let ammo1BB = {
           coll: new THREE.Box3(),
           item: meshes["caja.1"],
@@ -416,6 +513,24 @@
         );
 
 
+
+                /*
+        const loaderGLTF = new GLTFLoader(loadingManager);
+        loaderGLTF.load(
+          "Carro.glb",
+          function (gltf) {
+            let obj = gltf.scene;
+            obj.position.set(0, 1.5, 0);
+            obj.rotation.set(0, 0, 0);
+            obj.scale.set(2, 2, 2);
+            gltf.scene.traverse( function( node1 ) {
+              if ( node1.isMesh ) { node1.castShadow = true; }
+            } );
+            scene.add(obj);
+          }
+        );
+
+*/
         const loaderGLTF8 = new GLTFLoader(loadingManager);
         loaderGLTF8.load(
           "Soldado.glb",

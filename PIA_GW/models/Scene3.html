@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Proyecto</title>
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as THREE from "./three.module.js";
+      import { OrbitControls } from "./OrbitControls.js";
+      import { GLTFLoader } from "./GLTFLoader.js";
+      //import {FBXLoader } from './FBXLoader.js';
+      import {FBXLoader} from 'https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js';
+      import { STLLoader } from "./STLLoader.js";
+      import Timer from "./timer.js";
+
+      var scene, camera, renderer;
+      var meshFloor;
+
+      var keyboard = {};
+      var player = {speed: 0.5, turnspeed: 0.02, model: null, bb: null, canShoot: 0, bullets: [], bulletscoll: [], ammo:10 , life: 100, points: 0};
+      var pause = false;
+      var gameover = false;
+
+      var models = {
+        casa : {
+          glb: "House4.glb",
+          mesh: null
+        },
+        gallows : {
+          glb: "gallows.glb",
+          mesh: null
+        },
+        cactus : {
+          glb: "Cactus.glb",
+          mesh: null
+        },
+        cactus2 : {
+          glb: "Cactus2.glb",
+          mesh: null
+        },
+        fence : {
+          glb: "fence.glb",
+          mesh: null
+        },
+        zombie : {
+          glb: "Zombie.glb",
+          mesh: null
+        },
+        caja : {
+          glb: "wooden_box_free.glb",
+          mesh: null
+        },
+        carro:{
+          glb:"carro.glb",
+          mesh: null
+        },
+        barrel:{
+          glb:"barrel.glb",
+          mesh: null
+        },
+        sign:{
+          glb:"welcome.glb",
+          mesh: null
+        },
+        molinos:{
+          glb:"molino.glb",
+          mesh: null
+        }
+
+      }
+      var meshes = {};
+      var items= {};
+
+      var zombies= {};
+
+      var tempo = new Timer(60);
+
+      var loadingScreen = {
+        scene: new THREE.Scene(),
+        camera: new THREE.PerspectiveCamera(
+          60,
+          window.innerWidth / window.innerHeight, 1, 100
+        ),
+        box: new THREE.Mesh(
+	  	    new THREE.BoxGeometry(0.5,0.5,0.5),
+		      new THREE.MeshBasicMaterial({ color:0x4444ff })
+	      )
+      };
+      var loadingManager = null;
+      var RESOURCES_LOADED = false;
+      
+      function init(){
+        
+        // SCENE
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color("#34495E");
+        //scene.fog = new THREE.Fog(0x404040,0,500);
+
+        camera = new THREE.PerspectiveCamera(
+          60,
+          window.innerWidth / window.innerHeight, 1, 1000
+        );
+        camera.rotation.y = Math.PI * .5;
+        camera.position.set(80, 5, 0);
+
+        // Set up the loading screen's scene.
+        // It can be treated just like our main scene.
+        loadingScreen.box.position.set(0,0,5);
+        loadingScreen.camera.lookAt(loadingScreen.box.position);
+        loadingScreen.scene.add(loadingScreen.box);
+        
+        // Create a loading manager to set RESOURCES_LOADED when appropriate.
+        // Pass loadingManager to all resource loaders.
+        loadingManager = new THREE.LoadingManager();
+        
+        loadingManager.onProgress = function(item, loaded, total){
+          console.log(item, loaded, total);
+        };
+        
+        loadingManager.onLoad = function(){
+          console.log("loaded all resources");
+          RESOURCES_LOADED = true;
+          onResourcesLoaded();
+          tempo.start();
+        };
+
+        var texturaSky = new THREE.TextureLoader().load( "./Imagenes/sky_desert.jpg" );
+        var meshSky = new THREE.Mesh(
+          new THREE.SphereGeometry(500, 25, 25),
+          new THREE.MeshPhongMaterial({ map: texturaSky })
+        );
+        meshSky.material.side= THREE.BackSide;
+
+        
+        scene.add(meshSky);
+
+        // RENDERER
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // Lights
+        const light = new THREE.AmbientLight( 0xffffff ); // soft white light
+        scene.add( light );
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, .1);
+        directionalLight.position.set(0, 100, 50);
+        directionalLight.castShadow = true;
+        scene.add( directionalLight);
+
+        // Plane
+        var texture = new THREE.TextureLoader().load( "./Imagenes/tierra_seca.jpg" );
+          texture.wrapS=THREE.RepeatWrapping;
+          texture.wrapT=THREE.RepeatWrapping;
+          texture.repeat.set( 20,20 );
+
+          var textureD = new THREE.TextureLoader().load( "./Imagenes/tierra_seca_dis.jpg" );
+          textureD.wrapS=THREE.RepeatWrapping;
+          textureD.wrapT=THREE.RepeatWrapping;
+          textureD.repeat.set( 20,20 );
+
+          var textureN = new THREE.TextureLoader().load( "./Imagenes/tierra_seca_norm.jpg" );
+          textureN.wrapS=THREE.RepeatWrapping;
+          textureN.wrapT=THREE.RepeatWrapping;
+          textureN.repeat.set( 20,20 );
+
+
+        meshFloor = new THREE.Mesh(
+          new THREE.PlaneGeometry(500, 300),
+          new THREE.MeshStandardMaterial({ 
+          map: texture,
+          displacementMap: textureD,
+          displacementScale: .6,
+          normalMap: textureN
+         })
+        );
+        
+        meshFloor.position.set(15, -0.5, 15);
+        meshFloor.receiveShadow = true;
+        meshFloor.rotateX(-Math.PI / 2);
+
+        // Adding to scene
+        scene.add( meshFloor);
+
+        //const cameraControl = new OrbitControls(camera, renderer.domElement);
+
+        // Resize
+
+        function resize() {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          renderer.render(scene, camera);
+        }
+        window.addEventListener("resize", resize);
+
+        modelos();
+        animate();
+      }
+
+      function checkCollisions() {
+        if(items["ammo1BB"].consumed == false){
+          if(player.bb.intersectsBox(items.ammo1BB.coll)){
+            scene.remove(items["ammo1BB"].item);
+            items.ammo1BB.consumed = true;
+            player.ammo +=10;
+            console.log(player.ammo);
+          }
+        }
+        if(items["ammo2BB"].consumed == false){
+          if(player.bb.intersectsBox(items.ammo2BB.coll)){
+            scene.remove(items["ammo2BB"].item);
+            items.ammo2BB.consumed = true;
+            player.ammo +=10;
+            console.log(player.ammo);
+          }
+        }
+        if(items["life1BB"].consumed == false){
+          if(player.bb.intersectsBox(items.life1BB.coll)){
+            scene.remove(items["life1BB"].item);
+            items.life1BB.consumed = true;
+            player.life +=30;
+            if(player.life > 120) player.life = 100;
+            console.log(player.life);
+          }
+        }
+        if(items["life2BB"].consumed == false){
+          if(player.bb.intersectsBox(items.ammo1BB.coll)){
+            scene.remove(items["life2BB"].item);
+            items.life2BB.consumed = true;
+            player.life +=30;
+            if(player.life > 120) player.life = 100;
+            console.log("la vida del jugador es: ", player.life);
+          }
+        }
+        if(items["time1BB"].consumed == false){
+          if(player.bb.intersectsBox(items.time1BB.coll)){
+            scene.remove(items["time1BB"].item);
+            items.time1BB.consumed = true;
+            console.log("aumento el tiempo + 20seg");
+            tempo.remainingSeconds = tempo.remainingSeconds + 20;
+          }
+        }
+        if(items["bomba1BB"].consumed == false){
+          if(player.bb.intersectsBox(items.bomba1BB.coll)){
+            scene.remove(items["bomba1BB"].item);
+            items.bomba1BB.consumed = true;
+            player.life = player.life-50;
+            console.log("la vida del jugador es: ", player.life);
+          }
+        }
+
+
+        for(var index = 0; index <player.bulletscoll.length; index+=1){
+          if(player.bulletscoll[index].intersectsBox(zombies["zombie1BB"])) {
+            console.log("si pego xd");
+            scene.remove(player.bullets[index]);
+            player.bullets[index].alive = false;
+            player.bulletscoll.splice(index,1);
+            player.bullets.splice(index,1);
+          };
+        }
+
+      }
+
+      function onResourcesLoaded(){
+        meshes["casa.1"] = models.casa.mesh.clone();
+        meshes["casa.1"].position.set(-15, 0.02, 60);
+        meshes["casa.1"].scale.set(0.05, 0.05, 0.05);
+        scene.add(meshes["casa.1"]);
+
+
+
+
+
+
+
+        meshes["gallows.1"] = models.gallows.mesh.clone();
+        meshes["gallows.1"].rotation.y=600;
+        meshes["gallows.1"].position.set(90, 0, -40);
+        meshes["gallows.1"].scale.set(0.5, 0.5, 0.5);
+        scene.add(meshes["gallows.1"]);
+
+
+
+
+        meshes["fence.1"] = models.fence.mesh.clone();
+
+        meshes["fence.1"].position.set(30, 0.02, 45);
+        meshes["fence.1"].scale.set(1.5, 1.5, 3);
+        scene.add(meshes["fence.1"]);
+        meshes["fence.2"] = models.fence.mesh.clone();
+        meshes["fence.2"].scale.set(1.5, 1.5, 3);
+        meshes["fence.2"].position.set (30, 0.02, 60);
+        scene.add(meshes["fence.2"]);
+        meshes["fence.3"] = models.fence.mesh.clone();
+        meshes["fence.3"].scale.set(1.5, 1.5, 3);
+        meshes["fence.3"].position.set (30, 0.02, 75);
+        scene.add(meshes["fence.3"]);
+
+
+        meshes["fence.4"] = models.fence.mesh.clone();
+        meshes["fence.4"].position.set(-30, 0.02, -35);
+        meshes["fence.4"].scale.set(1.5, 1.5, 3);
+        scene.add(meshes["fence.4"]);
+        meshes["fence.5"] = models.fence.mesh.clone();
+        meshes["fence.5"].scale.set(1.5, 1.5, 3);
+        meshes["fence.5"].position.set (-30, 0.02, -50);
+        scene.add(meshes["fence.5"]);
+        meshes["fence.6"] = models.fence.mesh.clone();
+        meshes["fence.6"].scale.set(1.5, 1.5, 3);
+        meshes["fence.6"].position.set (-30, 0.02, -65);
+        scene.add(meshes["fence.6"]);
+
+
+        meshes["fence.7"] = models.fence.mesh.clone();
+        meshes["fence.7"].position.set(-30, 0.02, 45);
+        meshes["fence.7"].scale.set(1.5, 1.5, 3);
+        scene.add(meshes["fence.7"]);
+        meshes["fence.8"] = models.fence.mesh.clone();
+        meshes["fence.8"].scale.set(1.5, 1.5, 3);
+        meshes["fence.8"].position.set (-30, 0.02, 60);
+        scene.add(meshes["fence.8"]);
+        meshes["fence.9"] = models.fence.mesh.clone();
+        meshes["fence.9"].scale.set(1.5, 1.5, 3);
+        meshes["fence.9"].position.set (-30, 0.02, 75);
+        scene.add(meshes["fence.9"]);
+
+
+        meshes["fence.10"] = models.fence.mesh.clone();
+        meshes["fence.10"].position.set(30, 0.02, -35);
+        meshes["fence.10"].scale.set(1.5, 1.5, 3);
+        scene.add(meshes["fence.10"]);
+        meshes["fence.11"] = models.fence.mesh.clone();
+        meshes["fence.11"].scale.set(1.5, 1.5, 3);
+        meshes["fence.11"].position.set (30, 0.02, -50);
+        scene.add(meshes["fence.11"]);
+        meshes["fence.12"] = models.fence.mesh.clone();
+        meshes["fence.12"].scale.set(1.5, 1.5, 3);
+        meshes["fence.12"].position.set (30, 0.02, -65);
+        scene.add(meshes["fence.12"]);
+
+        meshes["molinos.1"] = models.molinos.mesh.clone();
+        meshes["molinos.1"].scale.set(0.5, 0.5, 0.5);
+        meshes["molinos.1"].position.set (-70, 25, -60);
+        scene.add(meshes["molinos.1"]);
+
+
+
+
+        meshes["cactus.1"] = models.cactus.mesh.clone();
+        meshes["cactus.1"].position.set(20, 0.02, 30);
+        meshes["cactus.1"].scale.set(0.2, 0.2, 0.2);
+        meshes["cactus.1"].rotation.set(0,2.79253,0);
+        scene.add(meshes["cactus.1"]);
+
+        meshes["cactus.2"] = models.cactus.mesh.clone();
+        meshes["cactus.2"].position.set(35, 0.02, 50);
+        meshes["cactus.2"].scale.set(0.2, 0.2, 0.2);
+        scene.add(meshes["cactus.2"]);
+
+        meshes["cactus.3"] = models.cactus.mesh.clone();
+        meshes["cactus.3"].position.set(-90, 0.02, 40);
+        meshes["cactus.3"].scale.set(0.2, 0.2, 0.2);
+        meshes["cactus.3"].rotation.set(0,2.79253,0);
+        scene.add(meshes["cactus.3"]);
+
+        meshes["cactus.4"] = models.cactus.mesh.clone();
+        meshes["cactus.4"].position.set(-90, 0.02, -40);
+        meshes["cactus.4"].scale.set(0.2, 0.2, 0.2);
+        meshes["cactus.4"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus.4"]);
+
+        meshes["cactus.5"] = models.cactus.mesh.clone();
+        meshes["cactus.5"].position.set(-40, 0.02, -70);
+        meshes["cactus.5"].scale.set(0.2, 0.2, 0.2);
+        meshes["cactus.5"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus.5"]);
+
+        meshes["cactus.6"] = models.cactus.mesh.clone();
+        meshes["cactus.6"].position.set(80, 0.02, -20);
+        meshes["cactus.6"].scale.set(0.2, 0.2, 0.2);
+        meshes["cactus.6"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus.6"]);
+
+
+
+        meshes["cactus2.1"] = models.cactus2.mesh.clone();
+        meshes["cactus2.1"].position.set(15, 0.02, 14);
+        meshes["cactus2.1"].scale.set(0.9, 0.9, 0.9);
+        meshes["cactus2.1"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus2.1"]);
+
+
+        meshes["cactus2.2"] = models.cactus2.mesh.clone();
+        meshes["cactus2.2"].position.set(-50, 0.02, -14);
+        meshes["cactus2.2"].scale.set(0.9, 0.9, 0.9);
+        meshes["cactus2.2"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus2.2"]);
+
+        meshes["cactus2.3"] = models.cactus2.mesh.clone();
+        meshes["cactus2.3"].position.set(70, 0.02, -30);
+        meshes["cactus2.3"].scale.set(0.9, 0.9, 0.9);
+        meshes["cactus2.3"].rotation.set(0,2.,0);
+        scene.add(meshes["cactus2.3"]);
+
+        meshes["cactus2.4"] = models.cactus2.mesh.clone();
+        meshes["cactus2.4"].position.set(100, 0.02, 80);
+        meshes["cactus2.4"].scale.set(0.9, 0.9, 0.9);
+        meshes["cactus2.4"].rotation.set(0,3,0);
+        scene.add(meshes["cactus2.4"]);
+
+
+
+        
+
+        meshes["caja.1"] = models.caja.mesh.clone();
+        meshes["caja.1"].scale.set(0.3,0.3,0.3);
+        meshes["caja.1"].position.set(63, 2, 92);
+
+
+
+        meshes["carro.1"] = models.carro.mesh.clone();
+        meshes["carro.1"].position.set(-40, 1.5, 30);
+        meshes["carro.1"].scale.set(2, 2, 2);
+        meshes["carro.1"].rotation.set(0,3,0);
+        scene.add(meshes["carro.1"]);
+
+        meshes["sign.1"] = models.sign.mesh.clone();
+        meshes["sign.1"].position.set(30, 0, 0);
+        meshes["sign.1"].scale.set(3, 3, 2);
+        meshes["sign.1"].rotation.set(0,1.5708,0);
+        scene.add(meshes["sign.1"]);
+
+
+
+
+        let ammo1BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.1"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(ammo1BB.item);
+        ammo1BB.coll.setFromObject(meshes["caja.1"]);
+        items["ammo1BB"] = ammo1BB;
+
+        meshes["caja.2"] = models.caja.mesh.clone();
+        meshes["caja.2"].scale.set(0.3,0.3,0.3);
+        meshes["caja.2"].position.set(-44, 2, 57);
+        let ammo2BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.2"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(ammo2BB.item);
+        ammo2BB.coll.setFromObject(meshes["caja.2"]);
+        items["ammo2BB"] = ammo2BB;
+
+        meshes["caja.3"] = models.caja.mesh.clone();
+        meshes["caja.3"].scale.set(0.3,0.3,0.3);
+        meshes["caja.3"].position.set(112, 2, -64);
+        let life1BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.3"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(life1BB.item);
+        life1BB.coll.setFromObject(meshes["caja.3"]);
+        items["life1BB"] = life1BB;
+
+        meshes["caja.4"] = models.caja.mesh.clone();
+        meshes["caja.4"].scale.set(0.3,0.3,0.3);
+        meshes["caja.4"].position.set(-91, 2, -71);
+        let life2BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.4"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(life2BB.item);
+        life2BB.coll.setFromObject(meshes["caja.4"]);
+        items["life2BB"] = life2BB;
+
+        meshes["caja.5"] = models.caja.mesh.clone();
+        meshes["caja.5"].scale.set(0.3,0.3,0.3);
+        meshes["caja.5"].position.set(-167, 2, -10);
+        let time1BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.5"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(time1BB.item);
+        time1BB.coll.setFromObject(meshes["caja.5"]);
+        items["time1BB"] = time1BB;
+
+        meshes["caja.6"] = models.caja.mesh.clone();
+        meshes["caja.6"].scale.set(0.3,0.3,0.3);
+        meshes["caja.6"].position.set(5, 2, -55);
+        let bomba1BB = {
+          coll: new THREE.Box3(),
+          item: meshes["caja.6"],
+          consumed: false,
+          arriba: true
+        };
+        scene.add(bomba1BB.item);
+        bomba1BB.coll.setFromObject(meshes["caja.6"]);
+        items["bomba1BB"] = bomba1BB;
+        
+
+        meshes["zombie.1"] = models.zombie.mesh.clone();
+        meshes["zombie.1"].position.set(-80, 0.01, 5);
+        meshes["zombie.1"].scale.set(0.1, 0.1, 0.1);
+        scene.add(meshes["zombie.1"]);
+        zombies["zombie1BB"] = new THREE.Box3();
+        zombies["zombie1BB"].setFromObject(meshes["zombie.1"]);
+        
+      }
+
+      function modelos(){
+
+        for (var _key in models){
+          (function(key){
+            var loader = new GLTFLoader(loadingManager);
+            loader.load(models[key].glb, function( mesh ) {
+                mesh.scene.traverse(function(node){
+                  if (node instanceof THREE.Mesh){
+                    node.castShadow = true;
+                    node.receiveShadow = true;
+                  }
+                });
+                models[key].mesh = mesh.scene;
+              });
+          })(_key);
+        }
+
+        // Loaders
+        
+        const loaderGLTF7 = new GLTFLoader(loadingManager);
+        loaderGLTF7.load(
+          "Escopeta.glb",
+          function (gltf7) {
+            let obj7 = gltf7.scene;
+            obj7.position.set(10, 5, 0);
+            obj7.rotation.set(0, 10, 0);
+            obj7.scale.set(2, 2, 2);
+            gltf7.scene.traverse( function( nodeEscopeta ) {
+              if ( nodeEscopeta.isMesh ) { nodeEscopeta.castShadow = true; }
+            } );
+            scene.add(obj7);
+          }
+        );
+
+
+
+
+        const loaderGLTF8 = new GLTFLoader(loadingManager);
+        loaderGLTF8.load(
+          "Soldado.glb",
+          function (gltf8) {
+            player.model = gltf8.scene;
+            player.model.position.set(80, 0.5, 0);
+            player.model.rotation.set(0, 5, 0);
+            player.model.scale.set(4.3, 4.3, 4.3);
+            gltf8.scene.traverse( function( nodeSoldado ) {
+              if ( nodeSoldado.isMesh ) { nodeSoldado.castShadow = true; }
+            } );
+            scene.add(player.model);
+          }
+        );
+        
+        player.bb = new THREE.Sphere(new THREE.Vector3(80, 0.5, 0),3);
+        
+      }
+
+      function disparo(){
+        for(var index = 0; index <player.bullets.length; index+=1){
+          if(player.bullets[index]== undefined) continue;
+          if(player.bullets[index].alive == false){
+            player.bullets.splice(index,1);
+            player.bulletscoll.splice(index,1);
+            continue;
+          }
+
+          player.bullets[index].position.add(player.bullets[index].velocity);
+          player.bulletscoll[index].center = player.bullets[index].position;
+        }
+        if(player.canShoot>0) player.canShoot -=1;
+      }
+
+      function teclao(){
+        if(keyboard[87]){ // w
+          camera.position.x -= Math.sin(camera.rotation.y) * player.speed;
+          camera.position.z -= Math.cos(camera.rotation.y) * player.speed;
+          player.model.position.x -= Math.sin(camera.rotation.y) * player.speed;
+          player.model.position.z -= Math.cos(camera.rotation.y) * player.speed;
+          player.bb.center =  player.model.position;
+          
+        }
+        if(keyboard[83]){ // s
+          camera.position.x += Math.sin(camera.rotation.y) * player.speed;
+          camera.position.z += Math.cos(camera.rotation.y) * player.speed;
+          player.model.position.x += Math.sin(camera.rotation.y) * player.speed;
+          player.model.position.z += Math.cos(camera.rotation.y) * player.speed;
+          player.bb.center =  player.model.position;
+        }
+        if(keyboard[65]){ // a
+          camera.position.x += Math.sin(camera.rotation.y - Math.PI/2) * player.speed;
+          camera.position.z += Math.cos(camera.rotation.y - Math.PI/2) * player.speed;
+          player.model.position.x += Math.sin(camera.rotation.y - Math.PI/2) * player.speed;
+          player.model.position.z += Math.cos(camera.rotation.y - Math.PI/2) * player.speed;
+          player.bb.center =  player.model.position;
+        }
+        if(keyboard[68]){ // d
+          camera.position.x += Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
+          camera.position.z += Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
+          player.model.position.x += Math.sin(camera.rotation.y + Math.PI/2) * player.speed;
+          player.model.position.z += Math.cos(camera.rotation.y + Math.PI/2) * player.speed;
+          player.bb.center =  player.model.position;
+        }
+        
+        if(keyboard[37]){
+          camera.rotation.y += player.turnspeed;
+          player.model.rotation.y += player.turnspeed;
+        }
+        if(keyboard[39]){
+          camera.rotation.y -= player.turnspeed;
+          player.model.rotation.y -= player.turnspeed;
+        }
+        if(keyboard[38]){
+          camera.position.x -= Math.sin(camera.rotation.y) * player.speed;
+          camera.position.z -= Math.cos(camera.rotation.y) * player.speed;
+          player.model.position.x -= Math.sin(camera.rotation.y) * player.speed;
+          player.model.position.z -= Math.cos(camera.rotation.y) * player.speed;
+          player.bb.center =  player.model.position;
+        }
+        if(keyboard[40]){
+          camera.position.x += Math.sin(camera.rotation.y) * player.speed;
+          camera.position.z += Math.cos(camera.rotation.y) * player.speed;
+          player.model.position.x += Math.sin(camera.rotation.y) * player.speed;
+          player.model.position.z += Math.cos(camera.rotation.y) * player.speed;
+          player.bb.center =  player.model.position;
+        }
+        
+        disparo();
+        if(keyboard[32] && player.canShoot <=0 && player.ammo >0){
+          var bullet = new THREE.Mesh(
+            new THREE.SphereGeometry(0.2,8,8),
+            new THREE.MeshBasicMaterial({color:0xffffff})
+          );
+          bullet.position.set(player.model.position.x,player.model.position.y,player.model.position.z);
+          var bulletSphere = new THREE.Sphere(bullet.position,.2);
+          bullet.velocity = new THREE.Vector3(
+            -Math.sin(camera.rotation.y),
+            0,
+            -Math.cos(camera.rotation.y),
+          );
+          bulletSphere.velocity = new THREE.Vector3(
+            -Math.sin(camera.rotation.y),
+            0,
+            -Math.cos(camera.rotation.y),
+          );
+
+          bullet.alive = true;
+          bulletSphere.alive = true;
+          setTimeout(function(){
+            bullet.alive = false;
+            bulletSphere.alive = false;
+            scene.remove(bullet);
+            bulletSphere = null;
+          }, 2000);
+          player.bullets.push(bullet);
+          player.bulletscoll.push(bulletSphere);
+          player.ammo -= 1;
+          scene.add(bullet);
+          player.canShoot = 15;
+        }
+      }
+
+      function animacionitems(){
+        
+        for (var _key in items){
+          (function(key){
+            if (items[key].item.position.y >= 4 && items[key].arriba == true){
+              items[key].arriba = false;
+            } 
+            if (items[key].item.position.y <= 2 && items[key].arriba == false){
+              items[key].arriba = true;
+            }
+            
+            if(items[key].arriba == true){
+              items[key].item.position.y += .02;
+            } 
+            if(items[key].arriba == false) {
+              items[key].item.position.y -= .02;
+            }
+            
+            items[key].item.rotation.y += 0.01;
+          })(_key);
+        }
+      }
+
+      function animate() {
+        
+        if( RESOURCES_LOADED == false ){
+          requestAnimationFrame(animate);
+            
+          loadingScreen.box.position.x -= 0.05;
+          if( loadingScreen.box.position.x < -10 ) loadingScreen.box.position.x = 10;
+          loadingScreen.box.position.y = Math.sin(loadingScreen.box.position.x);
+          
+          renderer.render(loadingScreen.scene, loadingScreen.camera);
+          return; // Stop the function here.
+        }
+
+        document.onkeydown = function (e){
+          if(e.keyCode === 80 && (tempo.remainingSeconds != 0)){
+            if(pause == true) {
+              
+              tempo.start();
+              pause = false;
+            } else {
+              console.log("en pausa"); 
+              tempo.pause();
+              pause = true;
+            };
+          }
+          if(e.keyCode === 88){
+            console.log(player.model.position);
+          }
+          //console.log(e.keyCode);
+        }
+
+        requestAnimationFrame(animate);
+        if(pause == false && gameover == false){
+          if(player.life <= 0 || tempo.remainingSeconds == 0){
+            gameover = true;
+            console.log("game over");
+          }
+
+          
+          animacionitems();
+          checkCollisions();
+          teclao();
+        }
+        renderer.render(scene, camera);
+      }
+
+      function keyDown(event){
+        keyboard[event.keyCode] = true;
+      }
+      function keyUp(event){
+        keyboard[event.keyCode] = false;
+      }
+
+      window.addEventListener('keydown', keyDown);     
+      window.addEventListener('keyup', keyUp);      
+ 
+      window.onload = init;
+      
+
+    </script>
+    
+  </body>
+</html>
