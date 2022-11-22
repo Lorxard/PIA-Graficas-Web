@@ -21,13 +21,14 @@
       import { STLLoader } from "./STLLoader.js";
       import Timer from "./timer.js";
 
-      var scene, camera, renderer;
+      var scene, camera, renderer, listener, audioLoader, backgroundSound;
       var meshFloor;
 
       var keyboard = {};
-      var player = {speed: 0.5, turnspeed: 0.02, model: null, bb: null, canShoot: 0, bullets: [], bulletscoll: [], ammo:10 , life: 100, points: 0};
+      var player = {speed: 0.5, turnspeed: 0.02, model: null, bb: null, life: 100, points: 0, enemigos: 0};
       var pause = false;
       var gameover = false;
+      var victoria = false;
 
       var models = {
         casa : {
@@ -54,10 +55,6 @@
           glb: "fence.glb",
           mesh: null
         },
-        zombie : {
-          glb: "Zombie.glb",
-          mesh: null
-        },
         caja : {
           glb: "wooden_box_free.glb",
           mesh: null
@@ -70,7 +67,7 @@
       var meshes = {};
       var items= {};
 
-      var zombies= {};
+      var soldados= {};
 
       var tempo = new Timer(60);
 
@@ -102,6 +99,20 @@
         camera.rotation.y = Math.PI * .5;
         camera.position.set(80, 5, 0);
 
+        //Cargar el audio de fondo
+        listener = new THREE.AudioListener();
+        camera.add(listener);
+
+        audioLoader = new THREE.AudioLoader();
+
+        backgroundSound = new THREE.Audio(listener);
+
+        audioLoader.load('./audios/desierto.mp3', function(buffer){
+          backgroundSound.setBuffer(buffer);
+          backgroundSound.setLoop(true);
+          backgroundSound.setVolume(.2);
+        });
+
         // Set up the loading screen's scene.
         // It can be treated just like our main scene.
         loadingScreen.box.position.set(0,0,5);
@@ -121,6 +132,7 @@
           RESOURCES_LOADED = true;
           onResourcesLoaded();
           tempo.start();
+          backgroundSound.play();
         };
 
         var texturaSky = new THREE.TextureLoader().load( "./Imagenes/noche.jpg" );
@@ -200,66 +212,45 @@
       }
 
       function checkCollisions() {
-        if(items["ammo1BB"].consumed == false){
+        /*if(items["ammo1BB"].consumed == false){
           if(player.bb.intersectsBox(items.ammo1BB.coll)){
             scene.remove(items["ammo1BB"].item);
             items.ammo1BB.consumed = true;
             player.ammo +=10;
             console.log(player.ammo);
           }
-        }
-        if(items["ammo2BB"].consumed == false){
-          if(player.bb.intersectsBox(items.ammo2BB.coll)){
-            scene.remove(items["ammo2BB"].item);
-            items.ammo2BB.consumed = true;
-            player.ammo +=10;
-            console.log(player.ammo);
+        }*/
+        if(soldados.soldado1BB.consumed == false){
+          if(player.bb.intersectsBox(soldados.soldado1BB.coll)){
+            scene.remove(soldados.soldado1BB.item);
+            soldados.soldado1BB.consumed = true;
+            player.enemigos += 1;
+            console.log("enemigos eliminados: ", player.enemigos);
           }
         }
-        if(items["life1BB"].consumed == false){
-          if(player.bb.intersectsBox(items.life1BB.coll)){
-            scene.remove(items["life1BB"].item);
-            items.life1BB.consumed = true;
-            player.life +=30;
-            if(player.life > 120) player.life = 100;
-            console.log(player.life);
+        if(soldados.soldado2BB.consumed == false){
+          if(player.bb.intersectsBox(soldados.soldado2BB.coll)){
+            scene.remove(soldados.soldado2BB.item);
+            soldados.soldado2BB.consumed = true;
+            player.enemigos += 1;
+            console.log("enemigos eliminados: ", player.enemigos);
           }
         }
-        if(items["life2BB"].consumed == false){
-          if(player.bb.intersectsBox(items.ammo1BB.coll)){
-            scene.remove(items["life2BB"].item);
-            items.life2BB.consumed = true;
-            player.life +=30;
-            if(player.life > 120) player.life = 100;
-            console.log("la vida del jugador es: ", player.life);
+        if(soldados.soldado3BB.consumed == false){
+          if(player.bb.intersectsBox(soldados.soldado3BB.coll)){
+            scene.remove(soldados.soldado3BB.item);
+            soldados.soldado3BB.consumed = true;
+            player.enemigos += 1;
+            console.log("enemigos eliminados: ", player.enemigos);
           }
         }
-        if(items["time1BB"].consumed == false){
-          if(player.bb.intersectsBox(items.time1BB.coll)){
-            scene.remove(items["time1BB"].item);
-            items.time1BB.consumed = true;
-            console.log("aumento el tiempo + 20seg");
-            tempo.remainingSeconds = tempo.remainingSeconds + 20;
+        if(soldados.soldado4BB.consumed == false){
+          if(player.bb.intersectsBox(soldados.soldado4BB.coll)){
+            scene.remove(soldados.soldado4BB.item);
+            soldados.soldado4BB.consumed = true;
+            player.enemigos += 1;
+            console.log("enemigos eliminados: ", player.enemigos);
           }
-        }
-        if(items["bomba1BB"].consumed == false){
-          if(player.bb.intersectsBox(items.bomba1BB.coll)){
-            scene.remove(items["bomba1BB"].item);
-            items.bomba1BB.consumed = true;
-            player.life = player.life-50;
-            console.log("la vida del jugador es: ", player.life);
-          }
-        }
-
-
-        for(var index = 0; index <player.bulletscoll.length; index+=1){
-          if(player.bulletscoll[index].intersectsBox(zombies["zombie1BB"])) {
-            console.log("si pego xd");
-            scene.remove(player.bullets[index]);
-            player.bullets[index].alive = false;
-            player.bulletscoll.splice(index,1);
-            player.bullets.splice(index,1);
-          };
         }
 
       }
@@ -277,11 +268,6 @@
         meshes["casa.3"].position.set(-60, 0.02, -60);
         meshes["casa.3"].scale.set(0.05, 0.05, 0.05);
         scene.add(meshes["casa.3"]);
-
-
-
-
-
 
         meshes["gallows.1"] = models.gallows.mesh.clone();
         meshes["gallows.1"].rotation.y=600;
@@ -304,10 +290,6 @@
         meshes["gallows.4"].scale.set(0.5, 0.5, 0.5);
         scene.add(meshes["gallows.4"]);
 
-
-
-
-
         meshes["casa.4"] = models.casa.mesh.clone();
         meshes["casa.4"].position.set(60, 0.02, -60);
         meshes["casa.4"].scale.set(0.05, 0.05, 0.05);
@@ -321,13 +303,7 @@
         meshes["casa.5"].scale.set(0.05, 0.05, 0.05);
         scene.add(meshes["casa.5"]);
         
-
-
-
-
-
         meshes["fence.1"] = models.fence.mesh.clone();
-
         meshes["fence.1"].position.set(30, 0.02, 45);
         meshes["fence.1"].scale.set(1.5, 1.5, 3);
         scene.add(meshes["fence.1"]);
@@ -339,7 +315,6 @@
         meshes["fence.3"].scale.set(1.5, 1.5, 3);
         meshes["fence.3"].position.set (30, 0.02, 75);
         scene.add(meshes["fence.3"]);
-
 
         meshes["fence.4"] = models.fence.mesh.clone();
         meshes["fence.4"].position.set(-30, 0.02, -35);
@@ -354,7 +329,6 @@
         meshes["fence.6"].position.set (-30, 0.02, -65);
         scene.add(meshes["fence.6"]);
 
-
         meshes["fence.7"] = models.fence.mesh.clone();
         meshes["fence.7"].position.set(-30, 0.02, 45);
         meshes["fence.7"].scale.set(1.5, 1.5, 3);
@@ -368,7 +342,6 @@
         meshes["fence.9"].position.set (-30, 0.02, 75);
         scene.add(meshes["fence.9"]);
 
-
         meshes["fence.10"] = models.fence.mesh.clone();
         meshes["fence.10"].position.set(30, 0.02, -35);
         meshes["fence.10"].scale.set(1.5, 1.5, 3);
@@ -381,10 +354,6 @@
         meshes["fence.12"].scale.set(1.5, 1.5, 3);
         meshes["fence.12"].position.set (30, 0.02, -65);
         scene.add(meshes["fence.12"]);
-
-
-
-
 
         meshes["cactus.1"] = models.cactus.mesh.clone();
         meshes["cactus.1"].position.set(20, 0.02, 30);
@@ -421,14 +390,11 @@
         meshes["cactus.6"].rotation.set(0,2.,0);
         scene.add(meshes["cactus.6"]);
 
-
-
         meshes["cactus2.1"] = models.cactus2.mesh.clone();
         meshes["cactus2.1"].position.set(15, 0.02, 14);
         meshes["cactus2.1"].scale.set(0.9, 0.9, 0.9);
         meshes["cactus2.1"].rotation.set(0,2.,0);
         scene.add(meshes["cactus2.1"]);
-
 
         meshes["cactus2.2"] = models.cactus2.mesh.clone();
         meshes["cactus2.2"].position.set(-50, 0.02, -14);
@@ -448,7 +414,6 @@
         meshes["cactus2.4"].rotation.set(0,3,0);
         scene.add(meshes["cactus2.4"]);
 
-
         meshes["carro.1"] = models.carro.mesh.clone();
         meshes["carro.1"].position.set(-20, 1.5, 40);
         meshes["carro.1"].scale.set(2, 2, 2);
@@ -467,16 +432,13 @@
         meshes["carro.3"].rotation.set(0,3.49066,0);
         scene.add(meshes["carro.3"]);
 
-
         meshes["carro.4"] = models.carro.mesh.clone();
         meshes["carro.4"].position.set(-80, 1.5, -35);
         meshes["carro.4"].scale.set(2, 2, 2);
         meshes["carro.4"].rotation.set(0,-0.349066,0);
         scene.add(meshes["carro.4"]);
 
-
-
-        meshes["caja.1"] = models.caja.mesh.clone();
+        /*meshes["caja.1"] = models.caja.mesh.clone();
         meshes["caja.1"].scale.set(0.3,0.3,0.3);
         meshes["caja.1"].position.set(63, 2, 92);
         let ammo1BB = {
@@ -487,80 +449,15 @@
         };
         scene.add(ammo1BB.item);
         ammo1BB.coll.setFromObject(meshes["caja.1"]);
-        items["ammo1BB"] = ammo1BB;
+        items["ammo1BB"] = ammo1BB;*/
 
-        meshes["caja.2"] = models.caja.mesh.clone();
-        meshes["caja.2"].scale.set(0.3,0.3,0.3);
-        meshes["caja.2"].position.set(-44, 2, 57);
-        let ammo2BB = {
-          coll: new THREE.Box3(),
-          item: meshes["caja.2"],
-          consumed: false,
-          arriba: true
-        };
-        scene.add(ammo2BB.item);
-        ammo2BB.coll.setFromObject(meshes["caja.2"]);
-        items["ammo2BB"] = ammo2BB;
-
-        meshes["caja.3"] = models.caja.mesh.clone();
-        meshes["caja.3"].scale.set(0.3,0.3,0.3);
-        meshes["caja.3"].position.set(112, 2, -64);
-        let life1BB = {
-          coll: new THREE.Box3(),
-          item: meshes["caja.3"],
-          consumed: false,
-          arriba: true
-        };
-        scene.add(life1BB.item);
-        life1BB.coll.setFromObject(meshes["caja.3"]);
-        items["life1BB"] = life1BB;
-
-        meshes["caja.4"] = models.caja.mesh.clone();
-        meshes["caja.4"].scale.set(0.3,0.3,0.3);
-        meshes["caja.4"].position.set(-91, 2, -71);
-        let life2BB = {
-          coll: new THREE.Box3(),
-          item: meshes["caja.4"],
-          consumed: false,
-          arriba: true
-        };
-        scene.add(life2BB.item);
-        life2BB.coll.setFromObject(meshes["caja.4"]);
-        items["life2BB"] = life2BB;
-
-        meshes["caja.5"] = models.caja.mesh.clone();
-        meshes["caja.5"].scale.set(0.3,0.3,0.3);
-        meshes["caja.5"].position.set(-167, 2, -10);
-        let time1BB = {
-          coll: new THREE.Box3(),
-          item: meshes["caja.5"],
-          consumed: false,
-          arriba: true
-        };
-        scene.add(time1BB.item);
-        time1BB.coll.setFromObject(meshes["caja.5"]);
-        items["time1BB"] = time1BB;
-
-        meshes["caja.6"] = models.caja.mesh.clone();
-        meshes["caja.6"].scale.set(0.3,0.3,0.3);
-        meshes["caja.6"].position.set(5, 2, -55);
-        let bomba1BB = {
-          coll: new THREE.Box3(),
-          item: meshes["caja.6"],
-          consumed: false,
-          arriba: true
-        };
-        scene.add(bomba1BB.item);
-        bomba1BB.coll.setFromObject(meshes["caja.6"]);
-        items["bomba1BB"] = bomba1BB;
-        
-
-        meshes["zombie.1"] = models.zombie.mesh.clone();
-        meshes["zombie.1"].position.set(-80, 0.01, 5);
-        meshes["zombie.1"].scale.set(0.1, 0.1, 0.1);
-        scene.add(meshes["zombie.1"]);
-        zombies["zombie1BB"] = new THREE.Box3();
-        zombies["zombie1BB"].setFromObject(meshes["zombie.1"]);
+       /* meshes["soldado.1"] = models.soldado.mesh.clone();
+        //meshes["soldado.1"].position.set(-80, 0.5, 0);
+        //meshes["soldado.1"].rotation.set(0, 5, 0);
+        //meshes["soldado.1"].scale.set(4.3, 4.3, 4.3);
+        scene.add(meshes["soldado.1"]);
+        soldados["soldado1BB"] = new THREE.Box3();
+        soldados["soldado1BB"].setFromObject(meshes["soldado.1"]);*/
         
       }
 
@@ -582,48 +479,96 @@
         }
 
         // Loaders
-        
         const loaderGLTF7 = new GLTFLoader(loadingManager);
         loaderGLTF7.load(
-          "Escopeta.glb",
-          function (gltf7) {
-            let obj7 = gltf7.scene;
-            obj7.position.set(10, 5, 0);
-            obj7.rotation.set(0, 10, 0);
-            obj7.scale.set(2, 2, 2);
-            gltf7.scene.traverse( function( nodeEscopeta ) {
-              if ( nodeEscopeta.isMesh ) { nodeEscopeta.castShadow = true; }
+          "Soldado.glb",
+          function (gltf8) {
+            let soldado = {
+              coll: new THREE.Box3(),
+              item: gltf8.scene,
+              consumed: false,
+              arriba: true
+            };
+            soldado.item.position.set(-80, 0.5, 0);
+            soldado.item.rotation.set(0, 5, 0);
+            soldado.item.scale.set(4.3, 4.3, 4.3);
+            gltf8.scene.traverse( function( nodeSoldado ) {
+              if ( nodeSoldado.isMesh ) { nodeSoldado.castShadow = true; }
             } );
-            scene.add(obj7);
+            soldado.coll.setFromObject(soldado.item);
+            soldados["soldado1BB"] = soldado;
+            scene.add(soldados["soldado1BB"].item);
           }
         );
-
-
-
-                /*
-        const loaderGLTF = new GLTFLoader(loadingManager);
-        loaderGLTF.load(
-          "Carro.glb",
-          function (gltf) {
-            let obj = gltf.scene;
-            obj.position.set(0, 1.5, 0);
-            obj.rotation.set(0, 0, 0);
-            obj.scale.set(2, 2, 2);
-            gltf.scene.traverse( function( node1 ) {
-              if ( node1.isMesh ) { node1.castShadow = true; }
+        const loaderGLTF9 = new GLTFLoader(loadingManager);
+        loaderGLTF9.load(
+          "Soldado.glb",
+          function (gltf8) {
+            let soldado = {
+              coll: new THREE.Box3(),
+              item: gltf8.scene,
+              consumed: false,
+              arriba: true
+            };
+            soldado.item.position.set(-59, 0.5, 86);
+            soldado.item.scale.set(4.3, 4.3, 4.3);
+            gltf8.scene.traverse( function( nodeSoldado ) {
+              if ( nodeSoldado.isMesh ) { nodeSoldado.castShadow = true; }
             } );
-            scene.add(obj);
+            soldado.coll.setFromObject(soldado.item);
+            soldados["soldado2BB"] = soldado;
+            scene.add(soldados["soldado2BB"].item);
           }
         );
+        const loaderGLTF10 = new GLTFLoader(loadingManager);
+        loaderGLTF10.load(
+          "Soldado.glb",
+          function (gltf8) {
+            let soldado = {
+              coll: new THREE.Box3(),
+              item: gltf8.scene,
+              consumed: false,
+              arriba: true
+            };
+            soldado.item.position.set(-141, 0.5, -96);
+            soldado.item.scale.set(4.3, 4.3, 4.3);
+            gltf8.scene.traverse( function( nodeSoldado ) {
+              if ( nodeSoldado.isMesh ) { nodeSoldado.castShadow = true; }
+            } );
+            soldado.coll.setFromObject(soldado.item);
+            soldados["soldado3BB"] = soldado;
+            scene.add(soldados["soldado3BB"].item);
+          }
+        );
+        const loaderGLTF11 = new GLTFLoader(loadingManager);
+        loaderGLTF11.load(
+          "Soldado.glb",
+          function (gltf8) {
+            let soldado = {
+              coll: new THREE.Box3(),
+              item: gltf8.scene,
+              consumed: false,
+              arriba: true
+            };
+            soldado.item.position.set(90, 0.5, -63);
+            soldado.item.scale.set(4.3, 4.3, 4.3);
+            gltf8.scene.traverse( function( nodeSoldado ) {
+              if ( nodeSoldado.isMesh ) { nodeSoldado.castShadow = true; }
+            } );
+            soldado.coll.setFromObject(soldado.item);
+            soldados["soldado4BB"] = soldado;
+            scene.add(soldados["soldado4BB"].item);
+          }
+        );
+        
 
-*/
         const loaderGLTF8 = new GLTFLoader(loadingManager);
         loaderGLTF8.load(
-          "Soldado.glb",
+          "Zombie.glb",
           function (gltf8) {
             player.model = gltf8.scene;
             player.model.position.set(80, 0.5, 0);
-            player.model.rotation.set(0, 5, 0);
+            player.model.rotation.set(0, 0, 0);
             player.model.scale.set(4.3, 4.3, 4.3);
             gltf8.scene.traverse( function( nodeSoldado ) {
               if ( nodeSoldado.isMesh ) { nodeSoldado.castShadow = true; }
@@ -634,21 +579,6 @@
         
         player.bb = new THREE.Sphere(new THREE.Vector3(80, 0.5, 0),3);
         
-      }
-
-      function disparo(){
-        for(var index = 0; index <player.bullets.length; index+=1){
-          if(player.bullets[index]== undefined) continue;
-          if(player.bullets[index].alive == false){
-            player.bullets.splice(index,1);
-            player.bulletscoll.splice(index,1);
-            continue;
-          }
-
-          player.bullets[index].position.add(player.bullets[index].velocity);
-          player.bulletscoll[index].center = player.bullets[index].position;
-        }
-        if(player.canShoot>0) player.canShoot -=1;
       }
 
       function teclao(){
@@ -705,39 +635,6 @@
           player.bb.center =  player.model.position;
         }
         
-        disparo();
-        if(keyboard[32] && player.canShoot <=0 && player.ammo >0){
-          var bullet = new THREE.Mesh(
-            new THREE.SphereGeometry(0.2,8,8),
-            new THREE.MeshBasicMaterial({color:0xffffff})
-          );
-          bullet.position.set(player.model.position.x,player.model.position.y,player.model.position.z);
-          var bulletSphere = new THREE.Sphere(bullet.position,.2);
-          bullet.velocity = new THREE.Vector3(
-            -Math.sin(camera.rotation.y),
-            0,
-            -Math.cos(camera.rotation.y),
-          );
-          bulletSphere.velocity = new THREE.Vector3(
-            -Math.sin(camera.rotation.y),
-            0,
-            -Math.cos(camera.rotation.y),
-          );
-
-          bullet.alive = true;
-          bulletSphere.alive = true;
-          setTimeout(function(){
-            bullet.alive = false;
-            bulletSphere.alive = false;
-            scene.remove(bullet);
-            bulletSphere = null;
-          }, 2000);
-          player.bullets.push(bullet);
-          player.bulletscoll.push(bulletSphere);
-          player.ammo -= 1;
-          scene.add(bullet);
-          player.canShoot = 15;
-        }
       }
 
       function animacionitems(){
@@ -762,6 +659,13 @@
           })(_key);
         }
       }
+      function puntos(){
+        let puntostiempo = tempo.remainingSeconds * 2;
+        let puntosvida = 0;
+        let puntosenemigos = player.enemigos * 100;
+        player.points = puntostiempo + puntosvida + puntosenemigos;
+        console.log("obtuviste ", player.points, "pts");
+      }
 
       function animate() {
         
@@ -777,7 +681,7 @@
         }
 
         document.onkeydown = function (e){
-          if(e.keyCode === 80 && (tempo.remainingSeconds != 0)){
+          if(e.keyCode === 80 && (tempo.remainingSeconds != 0) && gameover == false && victoria == false){
             if(pause == true) {
               
               tempo.start();
@@ -791,16 +695,28 @@
           if(e.keyCode === 88){
             console.log(player.model.position);
           }
+          if(e.keyCode === 32 && player.ammo ==0){
+            console.log("no tienes municion");
+          }
           //console.log(e.keyCode);
         }
 
         requestAnimationFrame(animate);
-        if(pause == false && gameover == false){
+        if(pause == false && gameover == false && victoria == false){
           if(player.life <= 0 || tempo.remainingSeconds == 0){
             gameover = true;
+            tempo.pause();
             console.log("game over");
+            puntos();
+            
           }
-
+          if(player.enemigos === 4){
+            console.log("Victoria");
+            tempo.pause();
+            victoria = true;
+            puntos();
+            
+          }
           
           animacionitems();
           checkCollisions();

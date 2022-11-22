@@ -12,6 +12,7 @@
     </style>
   </head>
   <body>
+    <div id="Timer">Texto</div>
     <script type="module">
       import * as THREE from "./three.module.js";
       import { OrbitControls } from "./OrbitControls.js";
@@ -21,13 +22,14 @@
       import { STLLoader } from "./STLLoader.js";
       import Timer from "./timer.js";
 
-      var scene, camera, renderer;
+      var scene, camera, renderer, listener, audioLoader, backgroundSound;
       var meshFloor;
 
       var keyboard = {};
-      var player = {speed: 0.5, turnspeed: 0.02, model: null, bb: null, canShoot: 0, bullets: [], bulletscoll: [], ammo:10 , life: 100, points: 0};
+      var player = {speed: 0.5, turnspeed: 0.02, model: null, bb: null, canShoot: 0, bullets: [], bulletscoll: [], ammo:10 , life: 100, points: 0, enemigos: 0};
       var pause = false;
       var gameover = false;
+      var victoria = false;
 
       var models = {
         casa : {
@@ -102,6 +104,20 @@
         camera.rotation.y = Math.PI * .5;
         camera.position.set(80, 5, 0);
 
+        listener = new THREE.AudioListener();
+        camera.add(listener);
+
+        audioLoader = new THREE.AudioLoader();
+
+        backgroundSound = new THREE.Audio(listener);
+
+        audioLoader.load('./audios/desierto.mp3', function(buffer){
+          backgroundSound.setBuffer(buffer);
+          backgroundSound.setLoop(true);
+          backgroundSound.setVolume(.2);
+          
+        });
+
         // Set up the loading screen's scene.
         // It can be treated just like our main scene.
         loadingScreen.box.position.set(0,0,5);
@@ -121,6 +137,7 @@
           RESOURCES_LOADED = true;
           onResourcesLoaded();
           tempo.start();
+          backgroundSound.play();
         };
 
         const loader = new THREE.TextureLoader();
@@ -210,7 +227,7 @@
             scene.remove(items["ammo1BB"].item);
             items.ammo1BB.consumed = true;
             player.ammo +=10;
-            console.log(player.ammo);
+            console.log("encontraste municion, tienes: ", player.ammo);
           }
         }
         if(items["ammo2BB"].consumed == false){
@@ -218,7 +235,7 @@
             scene.remove(items["ammo2BB"].item);
             items.ammo2BB.consumed = true;
             player.ammo +=10;
-            console.log(player.ammo);
+            console.log("encontraste municion, tienes: ", player.ammo);
           }
         }
         if(items["life1BB"].consumed == false){
@@ -226,17 +243,17 @@
             scene.remove(items["life1BB"].item);
             items.life1BB.consumed = true;
             player.life +=30;
-            if(player.life > 120) player.life = 100;
-            console.log(player.life);
+            if(player.life > 120) player.life = 120;
+            console.log("encontraste un botiquin, la vida del jugador es: ", player.life);
           }
         }
         if(items["life2BB"].consumed == false){
-          if(player.bb.intersectsBox(items.ammo1BB.coll)){
+          if(player.bb.intersectsBox(items.life2BB.coll)){
             scene.remove(items["life2BB"].item);
             items.life2BB.consumed = true;
             player.life +=30;
-            if(player.life > 120) player.life = 100;
-            console.log("la vida del jugador es: ", player.life);
+            if(player.life > 120) player.life = 120;
+            console.log("encontraste un botiquin, la vida del jugador es: ", player.life);
           }
         }
         if(items["time1BB"].consumed == false){
@@ -252,19 +269,101 @@
             scene.remove(items["bomba1BB"].item);
             items.bomba1BB.consumed = true;
             player.life = player.life-50;
-            console.log("la vida del jugador es: ", player.life);
+            console.log("te exploto una bomba, la vida del jugador es: ", player.life);
           }
         }
 
 
         for(var index = 0; index <player.bulletscoll.length; index+=1){
-          if(player.bulletscoll[index].intersectsBox(zombies["zombie1BB"])) {
-            console.log("si pego xd");
+          if(player.bulletscoll[index].intersectsBox(zombies["zombie1BB"].coll) && zombies["zombie1BB"].consumed == false) {
+            player.enemigos += 1;
+            console.log("zombies eliminados: ", player.enemigos);
             scene.remove(player.bullets[index]);
             player.bullets[index].alive = false;
             player.bulletscoll.splice(index,1);
             player.bullets.splice(index,1);
+            scene.remove(zombies["zombie1BB"].item);
+            zombies["zombie1BB"].consumed = true;
+            continue;
           };
+          if(player.bulletscoll[index].intersectsBox(zombies["zombie2BB"].coll) && zombies["zombie2BB"].consumed == false) {
+            player.enemigos += 1;
+            console.log("zombies eliminados: ", player.enemigos);
+            scene.remove(player.bullets[index]);
+            player.bullets[index].alive = false;
+            player.bulletscoll.splice(index,1);
+            player.bullets.splice(index,1);
+            scene.remove(zombies["zombie2BB"].item);
+            zombies["zombie2BB"].consumed = true;
+            continue;
+          };
+          if(player.bulletscoll[index].intersectsBox(zombies["zombie3BB"].coll) && zombies["zombie3BB"].consumed == false) {
+            player.enemigos += 1;
+            console.log("zombies eliminados: ", player.enemigos);
+            scene.remove(player.bullets[index]);
+            player.bullets[index].alive = false;
+            player.bulletscoll.splice(index,1);
+            player.bullets.splice(index,1);
+            scene.remove(zombies["zombie3BB"].item);
+            zombies["zombie3BB"].consumed = true;
+            continue;
+          };
+          if(player.bulletscoll[index].intersectsBox(zombies["zombie4BB"].coll) && zombies["zombie4BB"].consumed == false) {
+            player.enemigos += 1;
+            console.log("zombies eliminados: ", player.enemigos);
+            scene.remove(player.bullets[index]);
+            player.bullets[index].alive = false;
+            player.bulletscoll.splice(index,1);
+            player.bullets.splice(index,1);
+            scene.remove(zombies["zombie4BB"].item);
+            zombies["zombie4BB"].consumed = true;
+            continue;
+          };
+          if(player.bulletscoll[index].intersectsBox(zombies["zombie5BB"].coll) && zombies["zombie5BB"].consumed == false) {
+            player.enemigos += 1;
+            console.log("zombies eliminados: ", player.enemigos);
+            scene.remove(player.bullets[index]);
+            player.bullets[index].alive = false;
+            player.bulletscoll.splice(index,1);
+            player.bullets.splice(index,1);
+            scene.remove(zombies["zombie5BB"].item);
+            zombies["zombie5BB"].consumed = true;
+            continue;
+          };
+          if(player.bulletscoll[index].intersectsBox(zombies["zombie6BB"].coll) && zombies["zombie6BB"].consumed == false) {
+            player.enemigos += 1;
+            console.log("zombies eliminados: ", player.enemigos);
+            scene.remove(player.bullets[index]);
+            player.bullets[index].alive = false;
+            player.bulletscoll.splice(index,1);
+            player.bullets.splice(index,1);
+            scene.remove(zombies["zombie6BB"].item);
+            zombies["zombie6BB"].consumed = true;
+            continue;
+          };
+          if(player.bulletscoll[index].intersectsBox(zombies["zombie7BB"].coll) && zombies["zombie7BB"].consumed == false) {
+            player.enemigos += 1;
+            console.log("zombies eliminados: ", player.enemigos);
+            scene.remove(player.bullets[index]);
+            player.bullets[index].alive = false;
+            player.bulletscoll.splice(index,1);
+            player.bullets.splice(index,1);
+            scene.remove(zombies["zombie7BB"].item);
+            zombies["zombie7BB"].consumed = true;
+            continue;
+          };
+          if(player.bulletscoll[index].intersectsBox(zombies["zombie8BB"].coll) && zombies["zombie8BB"].consumed == false) {
+            player.enemigos += 1;
+            console.log("zombies eliminados: ", player.enemigos);
+            scene.remove(player.bullets[index]);
+            player.bullets[index].alive = false;
+            player.bulletscoll.splice(index,1);
+            player.bullets.splice(index,1);
+            scene.remove(zombies["zombie8BB"].item);
+            zombies["zombie8BB"].consumed = true;
+            continue;
+          };
+
         }
 
       }
@@ -469,12 +568,109 @@
         items["bomba1BB"] = bomba1BB;
         
 
-        meshes["zombie.1"] = models.zombie.mesh.clone();
-        meshes["zombie.1"].position.set(-80, 0.01, 5);
-        meshes["zombie.1"].scale.set(0.1, 0.1, 0.1);
-        scene.add(meshes["zombie.1"]);
-        zombies["zombie1BB"] = new THREE.Box3();
-        zombies["zombie1BB"].setFromObject(meshes["zombie.1"]);
+        let obj = models.zombie.mesh.clone();
+        obj.position.set(-80, 0.01, 5);
+        obj.scale.set(0.1, 0.1, 0.1);
+        let zombie = {
+          coll: new THREE.Box3(),
+          item: obj,
+          consumed: false,
+          arriba: true
+        };
+        zombie.coll.setFromObject(zombie.item);
+        zombies["zombie1BB"] = zombie;
+        scene.add(zombies["zombie1BB"].item);
+
+        let obj2 = models.zombie.mesh.clone();
+        obj2.position.set(-109, 0.01, 73);
+        obj2.scale.set(0.1, 0.1, 0.1);
+        let zombie2 = {
+          coll: new THREE.Box3(),
+          item: obj2,
+          consumed: false,
+          arriba: true
+        };
+        zombie2.coll.setFromObject(zombie2.item);
+        zombies["zombie2BB"] = zombie2;
+        scene.add(zombies["zombie2BB"].item);
+
+        let obj3 = models.zombie.mesh.clone();
+        obj3.position.set(-5, 0.01, 96);
+        obj3.scale.set(0.1, 0.1, 0.1);
+        let zombie3 = {
+          coll: new THREE.Box3(),
+          item: obj3,
+          consumed: false,
+          arriba: true
+        };
+        zombie3.coll.setFromObject(zombie3.item);
+        zombies["zombie3BB"] = zombie3;
+        scene.add(zombies["zombie3BB"].item);
+
+        let obj4 = models.zombie.mesh.clone();
+        obj4.position.set(29, 0.01, 31);
+        obj4.scale.set(0.1, 0.1, 0.1);
+        let zombie4 = {
+          coll: new THREE.Box3(),
+          item: obj4,
+          consumed: false,
+          arriba: true
+        };
+        zombie4.coll.setFromObject(zombie4.item);
+        zombies["zombie4BB"] = zombie4;
+        scene.add(zombies["zombie4BB"].item);
+
+        let obj5 = models.zombie.mesh.clone();
+        obj5.position.set(-26, 0.01, -7);
+        obj5.scale.set(0.1, 0.1, 0.1);
+        let zombie5 = {
+          coll: new THREE.Box3(),
+          item: obj5,
+          consumed: false,
+          arriba: true
+        };
+        zombie5.coll.setFromObject(zombie5.item);
+        zombies["zombie5BB"] = zombie5;
+        scene.add(zombies["zombie5BB"].item);
+
+        let obj6 = models.zombie.mesh.clone();
+        obj6.position.set(3, 0.01, -67);
+        obj6.scale.set(0.1, 0.1, 0.1);
+        let zombie6 = {
+          coll: new THREE.Box3(),
+          item: obj6,
+          consumed: false,
+          arriba: true
+        };
+        zombie6.coll.setFromObject(zombie6.item);
+        zombies["zombie6BB"] = zombie6;
+        scene.add(zombies["zombie6BB"].item);
+
+        let obj7 = models.zombie.mesh.clone();
+        obj7.position.set(62, 0.01, -84);
+        obj7.scale.set(0.1, 0.1, 0.1);
+        let zombie7 = {
+          coll: new THREE.Box3(),
+          item: obj7,
+          consumed: false,
+          arriba: true
+        };
+        zombie7.coll.setFromObject(zombie7.item);
+        zombies["zombie7BB"] = zombie7;
+        scene.add(zombies["zombie7BB"].item);
+
+        let obj8 = models.zombie.mesh.clone();
+        obj8.position.set(179, 0.01, -82);
+        obj8.scale.set(0.1, 0.1, 0.1);
+        let zombie8 = {
+          coll: new THREE.Box3(),
+          item: obj8,
+          consumed: false,
+          arriba: true
+        };
+        zombie8.coll.setFromObject(zombie8.item);
+        zombies["zombie8BB"] = zombie8;
+        scene.add(zombies["zombie8BB"].item);
         
       }
 
@@ -512,25 +708,6 @@
           }
         );
 
-
-
-                /*
-        const loaderGLTF = new GLTFLoader(loadingManager);
-        loaderGLTF.load(
-          "Carro.glb",
-          function (gltf) {
-            let obj = gltf.scene;
-            obj.position.set(0, 1.5, 0);
-            obj.rotation.set(0, 0, 0);
-            obj.scale.set(2, 2, 2);
-            gltf.scene.traverse( function( node1 ) {
-              if ( node1.isMesh ) { node1.castShadow = true; }
-            } );
-            scene.add(obj);
-          }
-        );
-
-*/
         const loaderGLTF8 = new GLTFLoader(loadingManager);
         loaderGLTF8.load(
           "Soldado.glb",
@@ -677,6 +854,14 @@
         }
       }
 
+      function puntos(){
+        let puntostiempo = tempo.remainingSeconds * 2;
+        let puntosvida = player.life * 2;
+        let puntosenemigos = player.enemigos * 100;
+        player.points = puntostiempo + puntosvida + puntosenemigos;
+        console.log("obtuviste ", player.points, "pts");
+      }
+
       function animate() {
         
         if( RESOURCES_LOADED == false ){
@@ -691,7 +876,7 @@
         }
 
         document.onkeydown = function (e){
-          if(e.keyCode === 80 && (tempo.remainingSeconds != 0)){
+          if(e.keyCode === 80 && (tempo.remainingSeconds != 0) && gameover == false && victoria == false){
             if(pause == true) {
               
               tempo.start();
@@ -705,17 +890,28 @@
           if(e.keyCode === 88){
             console.log(player.model.position);
           }
+          if(e.keyCode === 32 && player.ammo ==0){
+            console.log("no tienes municion");
+          }
           //console.log(e.keyCode);
         }
 
         requestAnimationFrame(animate);
-        if(pause == false && gameover == false){
+        if(pause == false && gameover == false && victoria == false){
           if(player.life <= 0 || tempo.remainingSeconds == 0){
             gameover = true;
             console.log("game over");
+            puntos();
+            
+          }
+          if(player.enemigos === 8){
+            console.log("Victoria");
+            tempo.pause();
+            victoria = true;
+            puntos();
+            
           }
 
-          
           animacionitems();
           checkCollisions();
           teclao();
