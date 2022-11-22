@@ -160,7 +160,7 @@
           texture.wrapT=THREE.RepeatWrapping;
           texture.repeat.set( 20,20 );
 
-          var textureD = new THREE.TextureLoader().load( "./Imagenes/tierra_seca_dis.jpg" );
+          var textureD = new THREE.TextureLoader().load( "./Imagenes/tierra_seca_dis.png" );
           textureD.wrapS=THREE.RepeatWrapping;
           textureD.wrapT=THREE.RepeatWrapping;
           textureD.repeat.set( 20,20 );
@@ -625,7 +625,7 @@
             new THREE.SphereGeometry(0.2,8,8),
             new THREE.MeshBasicMaterial({color:0xffffff})
           );
-          bullet.position.set(player.model.position.x,player.model.position.y,player.model.position.z);
+          bullet.position.set(player.model.position.x,player.model.position.y+3,player.model.position.z);
           var bulletSphere = new THREE.Sphere(bullet.position,.2);
           bullet.velocity = new THREE.Vector3(
             -Math.sin(camera.rotation.y),

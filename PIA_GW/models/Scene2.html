@@ -155,7 +155,7 @@
           texture.wrapT=THREE.RepeatWrapping;
           texture.repeat.set( 20,20 );
 
-          var textureD = new THREE.TextureLoader().load( "./Imagenes/tierra_seca_dis.jpg" );
+          var textureD = new THREE.TextureLoader().load( "./Imagenes/tierra_seca_dis.png" );
           textureD.wrapS=THREE.RepeatWrapping;
           textureD.wrapT=THREE.RepeatWrapping;
           textureD.repeat.set( 20,20 );
@@ -449,15 +449,6 @@
         scene.add(meshes["cactus2.4"]);
 
 
-
-        
-
-        meshes["caja.1"] = models.caja.mesh.clone();
-        meshes["caja.1"].scale.set(0.3,0.3,0.3);
-        meshes["caja.1"].position.set(63, 2, 92);
-
-
-
         meshes["carro.1"] = models.carro.mesh.clone();
         meshes["carro.1"].position.set(-20, 1.5, 40);
         meshes["carro.1"].scale.set(2, 2, 2);
@@ -485,7 +476,9 @@
 
 
 
-
+        meshes["caja.1"] = models.caja.mesh.clone();
+        meshes["caja.1"].scale.set(0.3,0.3,0.3);
+        meshes["caja.1"].position.set(63, 2, 92);
         let ammo1BB = {
           coll: new THREE.Box3(),
           item: meshes["caja.1"],
