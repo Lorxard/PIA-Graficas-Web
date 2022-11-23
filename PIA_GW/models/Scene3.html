@@ -19,7 +19,7 @@
           <ul class ="main-nav-list">
               
               <li class="main-nav-item">
-                  <a class="main-nav-link">
+                  <a class="main-nav-link" id="botonpausa">
                       Pausa
                   </a>
 
@@ -44,8 +44,8 @@
       <nav class="main-nav">
           <ul class ="main-nav-list">
               
-              <li class="main-nav-item" id="gameover">
-                  <a class="main-nav-link">
+              <li class="main-nav-item">
+                  <a class="main-nav-link" id="gameovertext">
                       GAME OVER
                   </a>
 
@@ -1115,6 +1115,11 @@
       function keyUp(event){
         keyboard[event.keyCode] = false;
       }
+      function pausa(){
+        pause = false;
+        tempo.start();
+      }
+      document.getElementById("botonpausa").addEventListener("click", pausa, false);
 
       window.addEventListener('keydown', keyDown);     
       window.addEventListener('keyup', keyUp);      

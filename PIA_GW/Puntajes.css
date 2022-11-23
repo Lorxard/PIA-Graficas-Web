@@ -1,0 +1,57 @@
+
+.menu_bot{
+    background-image: url(img/back-menu.jpg);
+    background-position: absolute;
+    background-repeat: no-repeat;
+    position:fixed;
+    top:0;
+    left:0;
+    height:100vh;
+    width: 100vw;
+    display:grid;
+    place-items:center;
+    padding:2rem;
+    z-index:10;
+    visibility:visible;
+    opacity: 1;
+   /* background-image: linear-gradient(to right bottom,#FE2,#4400AB);*/
+  background-size: contain;
+  
+}
+#titulo{
+  margin: 165px;
+ font-size: 30px;
+
+}
+
+#puntaje{
+
+
+  justify-content: center;
+
+  margin-left:  120px;
+  margin-top:  50px;
+}
+#guardar{
+  margin-left:  60px;
+  margin-top:  50px;
+}
+#btnVolver
+{
+  margin-left: 140px;
+  margin-top:  50px;
+}
+#Puntajes
+{
+  align-content: center;
+
+    border-radius: 25px;
+    background: #ffd41258;
+    padding: 20px;
+    width: 410px;
+    height: 345px;
+  
+}
+.button3 {border-radius: 8px;}
+
+
