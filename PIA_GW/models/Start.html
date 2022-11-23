@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Proyecto</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
     <style>
       body {
         margin: 0;
@@ -12,7 +13,7 @@
     </style>
   </head>
   <body>
-    <div id="Timer">Texto</div>
+    <div style="overflow: hidden; width: 100%; height: 100%; position: absolute; top: 0px; pointer-events: none;" id="hud"></div>
     <script type="module">
       import * as THREE from "./three.module.js";
       import { OrbitControls } from "./OrbitControls.js";
@@ -22,8 +23,11 @@
       import { STLLoader } from "./STLLoader.js";
       import Timer from "./timer.js";
 
-      var scene, camera, renderer, listener, audioLoader, backgroundSound;
+      var scene, camera, renderer, hud;
+      var audioLoader, disparoLoader, listener, backgroundSound, gunshotSound;
       var meshFloor;
+
+      var vidahud, timerhud, enemigoshud, estatushud, estatushud2, municionhud, vidahud;
 
       var keyboard = {};
       var player = {speed: 0.5, turnspeed: 0.02, model: null, bb: null, canShoot: 0, bullets: [], bulletscoll: [], ammo:10 , life: 100, points: 0, enemigos: 0};
@@ -104,18 +108,56 @@
         camera.rotation.y = Math.PI * .5;
         camera.position.set(80, 5, 0);
 
+        hud = document.getElementById("hud");
+        const div = document.createElement("div");
+        div.setAttribute("class", "row m-1");
+        hud.appendChild(div);
+        timerhud = document.createElement("div");
+        timerhud.setAttribute("id", "timerhud");
+        timerhud.setAttribute("class", "col-3");
+        vidahud = document.createElement("div");
+        vidahud.setAttribute("id", "vidahud");
+        vidahud.setAttribute("class", "col-3");
+        municionhud = document.createElement("div");
+        municionhud.setAttribute("id", "municionhud");
+        municionhud.setAttribute("class", "col-3");
+        enemigoshud = document.createElement("div");
+        enemigoshud.setAttribute("id", "enemigoshud");
+        enemigoshud.setAttribute("class", "col-3");
+        estatushud = document.createElement("div");
+        estatushud.setAttribute("id", "estatushud");
+        estatushud.setAttribute("class", " m-1");
+        estatushud2 = document.createElement("div");
+        estatushud2.setAttribute("id", "estatushud2");
+        estatushud2.setAttribute("class", " m-1");
+
+        
+        div.appendChild(timerhud);
+        div.appendChild(vidahud);
+        div.appendChild(municionhud);
+        div.appendChild(enemigoshud);
+        hud.appendChild(estatushud);
+        hud.appendChild(estatushud2);
+
         listener = new THREE.AudioListener();
         camera.add(listener);
 
         audioLoader = new THREE.AudioLoader();
+        disparoLoader = new THREE.AudioLoader();
 
         backgroundSound = new THREE.Audio(listener);
+        gunshotSound = new THREE.Audio(listener);
 
         audioLoader.load('./audios/desierto.mp3', function(buffer){
           backgroundSound.setBuffer(buffer);
           backgroundSound.setLoop(true);
           backgroundSound.setVolume(.2);
-          
+        });
+        disparoLoader.load('./audios/disparo.mp3', function(buffer){
+          gunshotSound.setBuffer(buffer);
+          gunshotSound.setLoop(false);
+          gunshotSound.duration = .3;
+          gunshotSound.setVolume(.2);
         });
 
         // Set up the loading screen's scene.
@@ -131,6 +173,7 @@
         loadingManager.onProgress = function(item, loaded, total){
           console.log(item, loaded, total);
         };
+
         
         loadingManager.onLoad = function(){
           console.log("loaded all resources");
@@ -138,6 +181,7 @@
           onResourcesLoaded();
           tempo.start();
           backgroundSound.play();
+
         };
 
         const loader = new THREE.TextureLoader();
@@ -228,6 +272,10 @@
             items.ammo1BB.consumed = true;
             player.ammo +=10;
             console.log("encontraste municion, tienes: ", player.ammo);
+            estatushud2.textContent = "Encontraste Municion!";
+            setTimeout(function(){
+              estatushud2.textContent = "";
+            }, 2000);
           }
         }
         if(items["ammo2BB"].consumed == false){
@@ -236,6 +284,10 @@
             items.ammo2BB.consumed = true;
             player.ammo +=10;
             console.log("encontraste municion, tienes: ", player.ammo);
+            estatushud2.textContent = "Encontraste Municion!";
+            setTimeout(function(){
+              estatushud2.textContent = "";
+            }, 2000);
           }
         }
         if(items["life1BB"].consumed == false){
@@ -245,6 +297,10 @@
             player.life +=30;
             if(player.life > 120) player.life = 120;
             console.log("encontraste un botiquin, la vida del jugador es: ", player.life);
+            estatushud2.textContent = "Encontraste un botiquin, tu vida aumento 30 pts(120 pts max)!";
+            setTimeout(function(){
+              estatushud2.textContent = "";
+            }, 2000);
           }
         }
         if(items["life2BB"].consumed == false){
@@ -254,6 +310,10 @@
             player.life +=30;
             if(player.life > 120) player.life = 120;
             console.log("encontraste un botiquin, la vida del jugador es: ", player.life);
+            estatushud2.textContent = "Encontraste un botiquin, tu vida aumento 30 pts(120 pts max)!";
+            setTimeout(function(){
+              estatushud2.textContent = "";
+            }, 2000);
           }
         }
         if(items["time1BB"].consumed == false){
@@ -262,6 +322,10 @@
             items.time1BB.consumed = true;
             console.log("aumento el tiempo + 20seg");
             tempo.remainingSeconds = tempo.remainingSeconds + 20;
+            estatushud2.textContent = "Tiempo extra, tienes 20 seg mas!";
+            setTimeout(function(){
+              estatushud2.textContent = "";
+            }, 2000);
           }
         }
         if(items["bomba1BB"].consumed == false){
@@ -270,6 +334,10 @@
             items.bomba1BB.consumed = true;
             player.life = player.life-50;
             console.log("te exploto una bomba, la vida del jugador es: ", player.life);
+            estatushud2.textContent = "La caja tenia una bomba, perdiste 50 pts de vida!";
+            setTimeout(function(){
+              estatushud2.textContent = "";
+            }, 2000);
           }
         }
 
@@ -827,7 +895,8 @@
           player.bulletscoll.push(bulletSphere);
           player.ammo -= 1;
           scene.add(bullet);
-          player.canShoot = 15;
+          player.canShoot = 25;
+          gunshotSound.play();
         }
       }
 
@@ -874,7 +943,23 @@
           renderer.render(loadingScreen.scene, loadingScreen.camera);
           return; // Stop the function here.
         }
-
+        timerhud.textContent = "Timer: " + tempo.remainingSeconds;
+        vidahud.textContent = "Vida: " + player.life;
+        municionhud.textContent = "Municion: " + player.ammo;
+        enemigoshud.textContent = "Enemigos restantes: " + (8 - player.enemigos);
+        if(pause){
+          estatushud.textContent = "pausa";
+        }
+        if(victoria){
+          estatushud.textContent = "Ganaste! Obtuviste " + player.points + " pts"; 
+        }
+        if(gameover){
+          estatushud.textContent = "Se acabo. Obtuviste " + player.points + " pts"; 
+        }
+        if(pause == false && victoria == false && gameover == false){
+          estatushud.textContent = ""
+        }
+        
         document.onkeydown = function (e){
           if(e.keyCode === 80 && (tempo.remainingSeconds != 0) && gameover == false && victoria == false){
             if(pause == true) {
@@ -916,6 +1001,7 @@
           checkCollisions();
           teclao();
         }
+        
         renderer.render(scene, camera);
       }
 
