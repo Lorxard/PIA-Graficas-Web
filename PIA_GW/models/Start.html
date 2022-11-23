@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Proyecto</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <link rel="stylesheet" href="../Pausa.css">
     <style>
       body {
         margin: 0;
@@ -13,6 +14,69 @@
     </style>
   </head>
   <body>
+    <div id="mainNav" class ="menu_bot" hidden = "true">
+      <nav class="main-nav">
+          <ul class ="main-nav-list">
+              
+              <li class="main-nav-item">
+                  <a class="main-nav-link">
+                      Pausa
+                  </a>
+
+              </li>
+          </br> </br>
+          </ul>
+
+          <ul class ="main-nav-list">
+              
+              <li class="main-nav-item" >
+                  <a class="main-nav-link" href="../index.html">
+                      Volver al Menu
+                  </a>
+
+              </li>
+          </br> </br>
+          </ul>
+
+      </nav>
+    </div>
+    <div id="gameOver" class ="menu_bot" hidden = "true">
+      <nav class="main-nav">
+          <ul class ="main-nav-list">
+              
+              <li class="main-nav-item" id="gameover">
+                  <a class="main-nav-link">
+                      GAME OVER
+                  </a>
+
+              </li>
+          </br> </br>
+          </ul>
+
+          <ul class ="main-nav-list">
+              
+            <li class="main-nav-item" >
+                <a class="main-nav-link" id="puntajefinal">
+                    Puntaje
+                </a>
+
+            </li>
+          </br> </br>
+          </ul>
+
+          <ul class ="main-nav-list">
+              
+              <li class="main-nav-item">
+                  <a class="main-nav-link" href="./index.html">
+                      Volver al Menu
+                  </a>
+
+              </li>
+          </br> </br>
+          </ul>
+
+      </nav>
+    </div>
     <div style="overflow: hidden; width: 100%; height: 100%; position: absolute; top: 0px; pointer-events: none;" id="hud"></div>
     <script type="module">
       import * as THREE from "./three.module.js";
@@ -27,6 +91,7 @@
       var audioLoader, disparoLoader, listener, backgroundSound, gunshotSound;
       var meshFloor;
 
+
       var vidahud, timerhud, enemigoshud, estatushud, estatushud2, municionhud, vidahud;
 
       var keyboard = {};
@@ -34,6 +99,10 @@
       var pause = false;
       var gameover = false;
       var victoria = false;
+
+      function pausa(){
+        pause = false;
+      }
 
       var models = {
         casa : {
@@ -930,6 +999,7 @@
         player.points = puntostiempo + puntosvida + puntosenemigos;
         console.log("obtuviste ", player.points, "pts");
       }
+      
 
       function animate() {
         
@@ -948,13 +1018,28 @@
         municionhud.textContent = "Municion: " + player.ammo;
         enemigoshud.textContent = "Enemigos restantes: " + (8 - player.enemigos);
         if(pause){
-          estatushud.textContent = "pausa";
+          document.getElementById("mainNav").hidden = false;
+          document.getElementById("hud").hidden = true;
+        } else{
+          document.getElementById("mainNav").hidden = true;
+          document.getElementById("hud").hidden = false;
         }
         if(victoria){
-          estatushud.textContent = "Ganaste! Obtuviste " + player.points + " pts"; 
+          document.getElementById("gameOver").hidden = false;
+          document.getElementById("puntajefinal").textContent = "Puntaje obtenido " + player.points + " pts";
+          document.getElementById("gameover").textContent = "VICTORIA";
+          document.getElementById("hud").hidden = true; 
+        } else{
+          document.getElementById("gameOver").hidden = true;
+          document.getElementById("hud").hidden = false;
         }
         if(gameover){
-          estatushud.textContent = "Se acabo. Obtuviste " + player.points + " pts"; 
+          document.getElementById("gameOver").hidden = false;
+          document.getElementById("puntajefinal").textContent = "Puntaje obtenido " + player.points + " pts";
+          document.getElementById("hud").hidden = true; 
+        } else{
+          document.getElementById("gameOver").hidden = true;
+          document.getElementById("hud").hidden = false;
         }
         if(pause == false && victoria == false && gameover == false){
           estatushud.textContent = ""
