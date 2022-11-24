@@ -232,7 +232,7 @@
 
       var zombies= {};
 
-      var tempo = new Timer(60);
+      var tempo = new Timer(1000);
 
       var loadingScreen = {
         scene: new THREE.Scene(),
@@ -1167,17 +1167,17 @@ if(!jugador){
   //Agregar a la escena
   const loaderGLTF8 = new GLTFLoader(loadingManager);
   loaderGLTF8.load(
-          "Soldado.glb",
+          "wooden_box_free.glb",
           function (gltf8) {
             player.model = gltf8.scene;
             player.model.position.set(value.x, 0.5, value.x);
             player.model.rotation.set(0, 5, 0);
-            player.model.scale.set(4.3, 4.3, 4.3);
+            player.model.scale.set(0.3, 0.3, 0.3);
             gltf8.scene.traverse( function( nodeSoldado ) {
               if ( nodeSoldado.isMesh ) { nodeSoldado.castShadow = true; }
             } );
-                   player.model.name= key;
-		  scene.add(player.model);
+            player.model.name= key;
+            scene.add(player.model);
           }
         );
 
