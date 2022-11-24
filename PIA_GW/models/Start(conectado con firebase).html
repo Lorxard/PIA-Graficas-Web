@@ -15,8 +15,7 @@
     </style>
   </head>
   <body>
-    <button id="button-login">Login with Google</button>
-    <button id="button-log-out">Log out</button>
+   
     <div id="mainNav" class ="menu_bot" hidden = "true">
       <nav class="main-nav">
           <ul class ="main-nav-list">
@@ -81,7 +80,8 @@
       </nav>
     </div>
     <div style="overflow: hidden; width: 100%; height: 100%; position: absolute; top: 0px; pointer-events: none;" id="hud"></div>
-   
+    <button id="button-login">Login with Google</button>
+    <button id="button-log-out">Log out</button>
    <script type="module">
       import * as THREE from "./three.module.js";
       import { OrbitControls } from "./OrbitControls.js";
@@ -233,7 +233,7 @@
 
       var zombies= {};
 
-      var tempo = new Timer(60);
+      var tempo = new Timer(1500);
 
       var loadingScreen = {
         scene: new THREE.Scene(),
@@ -1059,7 +1059,7 @@
           gunshotSound.play();
         }
         writeUserData(currentUser.uid, player.model.position);
-      }
+      };
 
       const db = getDatabase();
       const starCountRef = ref(db, "jugadores");
@@ -1074,7 +1074,7 @@ if(!jugador){
   //Agregar a la escena
   const loaderGLTF8 = new GLTFLoader(loadingManager);
   loaderGLTF8.load(
-          "Soldado.glb",
+          "wooden_box_free.glb",
           function (gltf8) {
             player.model = gltf8.scene;
             player.model.position.set(value.x, 0.5, value.x);
