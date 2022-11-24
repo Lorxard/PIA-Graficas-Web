@@ -1118,18 +1118,12 @@
           document.getElementById("puntajefinal").textContent = "Puntaje obtenido " + player.points + " pts";
           document.getElementById("gameover").textContent = "VICTORIA";
           document.getElementById("hud").hidden = true; 
-        } else{
-          document.getElementById("gameOver").hidden = true;
-          document.getElementById("hud").hidden = false;
-        }
+        } 
         if(gameover){
           document.getElementById("gameOver").hidden = false;
           document.getElementById("puntajefinal").textContent = "Puntaje obtenido " + player.points + " pts";
           document.getElementById("hud").hidden = true; 
-        } else{
-          document.getElementById("gameOver").hidden = true;
-          document.getElementById("hud").hidden = false;
-        }
+        } 
         if(pause == false && victoria == false && gameover == false){
           estatushud.textContent = ""
         }
