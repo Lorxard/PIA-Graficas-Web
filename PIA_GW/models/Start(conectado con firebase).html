@@ -1083,6 +1083,7 @@ if(!jugador){
             gltf8.scene.traverse( function( nodeSoldado ) {
               if ( nodeSoldado.isMesh ) { nodeSoldado.castShadow = true; }
             } );
+            player.model.name= key;
             scene.add(player.model);
           }
         );
